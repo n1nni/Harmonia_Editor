@@ -22,10 +22,29 @@ export const useDisplay = () =>
       reconstructionOn: s.display.reconstructionOn,
       debug: s.display.debug,
       uiScale: s.display.uiScale,
+      staffInspectorVisible: s.display.staffInspectorVisible,
+      dpi: s.display.dpi,
+      snapToOtherStaves: s.display.snapToOtherStaves,
+      activeTool: s.display.activeTool,
     })),
   );
 
+export const useActiveTool = () => useHarmonyStore((s) => s.display.activeTool);
+
+export const useDpi = () => useHarmonyStore((s) => s.display.dpi);
+export const useSnapToOtherStaves = () =>
+  useHarmonyStore((s) => s.display.snapToOtherStaves);
+
 export const useUiScale = () => useHarmonyStore((s) => s.display.uiScale);
+
+export const useSelectedStaffKey = () =>
+  useHarmonyStore((s) => s.interaction.selectedStaffKey);
+
+export const useStaffTransforms = () =>
+  useHarmonyStore((s) => s.edits.staffTransforms);
+
+export const useStaffInspectorVisible = () =>
+  useHarmonyStore((s) => s.display.staffInspectorVisible);
 
 export const useDebugFlags = () => useHarmonyStore(useShallow((s) => s.display.debug));
 

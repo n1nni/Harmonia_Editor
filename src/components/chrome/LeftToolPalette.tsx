@@ -1,7 +1,7 @@
 'use client';
 
 import { useHarmonyActions } from '@/lib/store/useHarmonyStore';
-import { useInteraction } from '@/lib/store/selectors';
+import { useActiveTool, useInteraction } from '@/lib/store/selectors';
 import { ToolButton } from './primitives/ToolButton';
 import { SCALED } from './scale';
 import {
@@ -9,19 +9,26 @@ import {
   ArrowLeftIcon,
   ArrowRightIcon,
   ArrowUpIcon,
+  CursorIcon,
   PlayIcon,
+  StaffIcon,
   TrashIcon,
 } from './icons';
 
 /**
- * Vertical action column on the left edge (52px). Action-only (not
- * mode-toggle like Inkscape) — clicking a button fires a single action
- * on the currently selected note. Items are disabled when there is no
- * note to act on.
+ * Vertical action column on the left edge. Two layers:
+ *
+ *  1. **Tools** (top) — radio-style mode buttons that switch between
+ *     "Select" (notes / detections) and "Staff" (staff systems). Only one
+ *     can be active at a time.
+ *
+ *  2. **Actions** (below) — buttons that fire single actions on the
+ *     current selection (sequence step, pitch shift, delete).
  */
 export function LeftToolPalette() {
   const a = useHarmonyActions();
   const { selectedId } = useInteraction();
+  const tool = useActiveTool();
   const has = Boolean(selectedId);
 
   return (
@@ -30,6 +37,30 @@ export function LeftToolPalette() {
       style={{ width: SCALED.paletteWidth }}
       aria-label="Tool palette"
     >
+      {/* Tools (mode toggles) */}
+      <div className="flex flex-col items-center gap-1">
+        <ToolButton
+          label="Select tool"
+          shortcut="V"
+          tooltipSide="right"
+          onClick={() => a.setActiveTool('select')}
+          active={tool === 'select'}
+        >
+          <CursorIcon />
+        </ToolButton>
+        <ToolButton
+          label="Staff tool"
+          shortcut="S"
+          tooltipSide="right"
+          onClick={() => a.setActiveTool('staff')}
+          active={tool === 'staff'}
+        >
+          <StaffIcon />
+        </ToolButton>
+      </div>
+
+      <div className="my-2 h-px w-5 bg-line-subtle" />
+
       <div className="flex flex-col items-center gap-1">
         <ToolButton
           label="Start from first note"

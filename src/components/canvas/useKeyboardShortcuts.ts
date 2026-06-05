@@ -65,6 +65,14 @@ export function useKeyboardShortcuts() {
       const pendingDelete = Boolean(interaction.pendingDeleteId);
 
       switch (e.key) {
+        case 'v':
+        case 'V':
+          actions.setActiveTool('select');
+          break;
+        case 's':
+        case 'S':
+          actions.setActiveTool('staff');
+          break;
         case 'f':
         case 'F':
           actions.fitToScreen();
@@ -84,8 +92,12 @@ export function useKeyboardShortcuts() {
         case 'Escape':
           if (pendingDelete) {
             actions.cancelDelete();
+          } else if (state.display.activeTool === 'staff' && !state.interaction.selectedStaffKey) {
+            // Empty Staff mode → leave the tool.
+            actions.setActiveTool('select');
           } else {
             actions.setSelected(null);
+            actions.selectStaff(null);
           }
           break;
         case 'Delete':

@@ -171,3 +171,15 @@ export const QuestionIcon = (p: IconProps) => (
     <path d="M6.5 6.5c0-1 1-1.7 2-1.5s1.5 1 1.3 1.8c-.2.7-1.3 1-1.3 1.7v.5M8 11.5h.01" />
   </I>
 );
+
+export const CursorIcon = (p: IconProps) => (
+  <I {...p}>
+    <path d="M3 2.5l8 4.5-3.5 1.2L6 13z" fill="currentColor" stroke="currentColor" strokeWidth="0.8" />
+  </I>
+);
+
+export const StaffIcon = (p: IconProps) => (
+  <I {...p}>
+    <path d="M2 4.5h12M2 6.75h12M2 9h12M2 11.25h12M2 13.5h12" strokeWidth="1.2" />
+  </I>
+);

@@ -13,6 +13,12 @@ import { OverlaySvg } from './OverlaySvg';
 import { InspectorCard } from './InspectorCard';
 import { HoverTooltip } from './HoverTooltip';
 import { DeleteConfirmPopup } from './DeleteConfirmPopup';
+import { StaffInspector } from './staff/StaffInspector';
+import {
+  DragGuidesProvider,
+  StaffHandlesLayer,
+} from './staff/StaffHandlesLayer';
+import { SnapGuides } from './staff/SnapGuides';
 import { usePanZoom } from './usePanZoom';
 
 /**
@@ -28,7 +34,7 @@ export function CanvasStage() {
   const { setContainerSize } = useHarmonyActions();
   const { zoom, pan, fitScale, containerSize } = useViewport();
   const dims = useImageDims();
-  const { overlayOpacity, reconstructionOn } = useDisplay();
+  const { overlayOpacity, reconstructionOn, activeTool } = useDisplay();
   const raw = useRaw();
 
   useEffect(() => {
@@ -63,7 +69,7 @@ export function CanvasStage() {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-surface-canvas"
-      style={{ touchAction: 'none' }}
+      style={{ touchAction: 'none', cursor: activeTool === 'staff' ? 'crosshair' : undefined }}
     >
       <BackgroundGrid />
 
@@ -122,6 +128,12 @@ export function CanvasStage() {
       <HoverTooltip />
       <DeleteConfirmPopup />
       <InspectorCard />
+
+      <DragGuidesProvider>
+        <StaffHandlesLayer />
+        <SnapGuides />
+        <StaffInspector />
+      </DragGuidesProvider>
     </div>
   );
 }

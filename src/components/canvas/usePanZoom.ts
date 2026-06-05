@@ -96,6 +96,15 @@ export function usePanZoom(target: React.RefObject<HTMLElement>) {
     }
 
     function onPointerDown(e: PointerEvent) {
+      // Bail out if the target owns its own gesture (hit rects, staff
+      // handles, body-drag div). Marked via `data-no-pan="1"` on each
+      // such element. Without this guard the native pan listener on the
+      // container fires before any React handler can stopPropagation it,
+      // so canvas pan competes with the staff drag.
+      const tgt = e.target as Element | null;
+      if (tgt && typeof tgt.closest === 'function' && tgt.closest('[data-no-pan]')) {
+        return;
+      }
       pointers.current.set(e.pointerId, { id: e.pointerId, x: e.clientX, y: e.clientY });
       if (
         pointers.current.size === 1 &&

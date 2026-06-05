@@ -11,6 +11,7 @@ import { TransformGrid } from '@/components/debug/TransformGrid';
 import { MusicLayer } from '@/lib/render/svg/MusicLayer';
 import { HoverHighlight } from './HoverHighlight';
 import { HitTestLayer } from './HitTestLayer';
+import { StaffSelectionOverlay } from './staff/StaffSelectionOverlay';
 
 /**
  * Root SVG layer. Sized to the image's natural pixel dimensions with
@@ -54,6 +55,7 @@ export function OverlaySvg() {
       {bravuraLoaded ? <MusicLayer /> : null}
 
       <HoverHighlight />
+      <StaffSelectionOverlay />
 
       {debug.bboxes ? <BboxLayer /> : null}
       {debug.centers ? <CenterDotLayer /> : null}

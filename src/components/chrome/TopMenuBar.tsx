@@ -136,6 +136,30 @@ export function TopMenuBar() {
               checked={display.reconstructionOn}
               onSelect={() => a.setReconstructionOn(!display.reconstructionOn)}
             />
+            <MenuCheck
+              label="Show staff inspector"
+              checked={display.staffInspectorVisible}
+              onSelect={() =>
+                a.setStaffInspectorVisible(!display.staffInspectorVisible)
+              }
+            />
+            <MenuCheck
+              label="Snap to other staves"
+              checked={display.snapToOtherStaves}
+              onSelect={() =>
+                a.setSnapToOtherStaves(!display.snapToOtherStaves)
+              }
+            />
+            <MenuSubmenu label="DPI">
+              {[96, 150, 300, 600].map((d) => (
+                <MenuCheck
+                  key={d}
+                  label={`${d}`}
+                  checked={display.dpi === d}
+                  onSelect={() => a.setDpi(d)}
+                />
+              ))}
+            </MenuSubmenu>
             <MenuSubmenu label="Overlay opacity">
               {[100, 75, 50, 25].map((p) => (
                 <MenuItem
