@@ -220,3 +220,14 @@ export const NoteEighthIcon = (p: IconProps) => (
     <path d="M8.5 2.5c2.2 1 3.5 2.5 3.5 4.5" />
   </I>
 );
+
+export const AlignNoteIcon = (p: IconProps) => (
+  <I {...p}>
+    {/* horizontal alignment line through the staff */}
+    <path d="M1 8h14" strokeDasharray="1.5 1.5" />
+    {/* notehead sitting on the line */}
+    <ellipse cx="6" cy="8" rx="2.6" ry="2" fill="currentColor" stroke="none" />
+    {/* tiny down arrow to suggest "snap onto line" */}
+    <path d="M11 3v5M9.5 6L11 7.5 12.5 6" strokeWidth="1.3" />
+  </I>
+);

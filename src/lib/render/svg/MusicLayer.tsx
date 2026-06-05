@@ -4,17 +4,19 @@ import { memo } from 'react';
 import type { Detection, RawStaff } from '@/types/omr';
 import {
   useAddedNotes,
+  useAlignOffsets,
   useDeletedIds,
   usePitchShifts,
   useRaw,
   useStaffTransforms,
 } from '@/lib/store/selectors';
 import { glyphFor, renderScaleFor } from '@/lib/smufl/glyphMap';
-import { applyPitchShiftToDetection } from '@/lib/music/applyEdits';
+import { applyAlignOffsetToDetection, applyPitchShiftToDetection } from '@/lib/music/applyEdits';
 import { staffKey } from '@/lib/staff/keys';
 import { IDENTITY_TRANSFORM, type StaffTransform } from '@/lib/staff/types';
 import { transformToSvg } from '@/lib/staff/transform';
 import { addedNoteToDetection, type AddedNote } from '@/lib/staff/addedNotes';
+import type { AlignOffset } from '@/lib/store/useHarmonyStore';
 import { Glyph } from './Glyph';
 import { StaffLines } from './StaffLines';
 import { Beam } from './Beam';
@@ -37,6 +39,7 @@ export const MusicLayer = memo(function MusicLayer() {
   const pitchShifts = usePitchShifts();
   const staffTransforms = useStaffTransforms();
   const addedNotes = useAddedNotes();
+  const alignOffsets = useAlignOffsets();
   if (!raw) return null;
 
   return (
@@ -56,6 +59,7 @@ export const MusicLayer = memo(function MusicLayer() {
             staff={staff}
             deletedIds={deletedIds}
             pitchShifts={pitchShifts}
+            alignOffsets={alignOffsets}
             transform={transform}
             addedNotes={added}
           />
@@ -73,6 +77,7 @@ interface StaffGroupProps {
   staff: RawStaff;
   deletedIds: ReadonlySet<string>;
   pitchShifts: ReadonlyMap<string, number>;
+  alignOffsets: ReadonlyMap<string, AlignOffset>;
   transform: StaffTransform;
   addedNotes: readonly AddedNote[];
 }
@@ -81,6 +86,7 @@ const StaffGroup = memo(function StaffGroup({
   staff,
   deletedIds,
   pitchShifts,
+  alignOffsets,
   transform,
   addedNotes,
 }: StaffGroupProps) {
@@ -109,18 +115,22 @@ const StaffGroup = memo(function StaffGroup({
     else if (d.class === 'slur') slurs.push(d);
     else if (isNoteheadClass(d.class)) {
       const shift = pitchShifts.get(d.id) ?? 0;
-      noteheads.push(shift === 0 ? d : applyPitchShiftToDetection(d, shift, ls));
+      let eff = shift === 0 ? d : applyPitchShiftToDetection(d, shift, ls);
+      eff = applyAlignOffsetToDetection(eff, alignOffsets.get(d.id));
+      noteheads.push(eff);
     } else otherGlyphs.push(d);
   }
 
   // Merge added notes (user-placed) as synthetic noteheads. They flow
   // through the same Glyph + Stem pipeline as detected notes — including
-  // pitch-shift + deletion via the same id-keyed edit maps.
+  // pitch-shift + deletion + alignment via the same id-keyed edit maps.
   for (const n of addedNotes) {
     if (deletedIds.has(n.id)) continue;
     const synth = addedNoteToDetection(n, staff);
     const shift = pitchShifts.get(synth.id) ?? 0;
-    noteheads.push(shift === 0 ? synth : applyPitchShiftToDetection(synth, shift, ls));
+    let eff = shift === 0 ? synth : applyPitchShiftToDetection(synth, shift, ls);
+    eff = applyAlignOffsetToDetection(eff, alignOffsets.get(synth.id));
+    noteheads.push(eff);
   }
 
   // Per-staff affine transform; identity is the no-op default. SVG applies

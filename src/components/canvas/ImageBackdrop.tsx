@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useHarmonyActions, useHarmonyStore } from '@/lib/store/useHarmonyStore';
+import { setImagePixels } from '@/lib/staff/imagePixels';
 
 /**
  * Renders the rectified sheet-music image (from `rectified_image_b64`).
@@ -33,6 +34,10 @@ export function ImageBackdrop() {
       onLoad={(e) => {
         const el = e.currentTarget;
         setImageDims({ w: el.naturalWidth, h: el.naturalHeight });
+        // Populate the grayscale pixel cache used by IoU Auto-Align. Safe
+        // to call synchronously — the img element is fully decoded by the
+        // time onLoad fires.
+        setImagePixels(el);
       }}
       style={{
         display: 'block',

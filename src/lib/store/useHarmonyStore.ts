@@ -25,22 +25,44 @@ export type DeleteFocus = 'confirm' | 'cancel';
 export type ActiveTool = 'select' | 'staff' | 'add-note';
 
 /**
+ * Pixel-level position offset applied to a single notehead. Used by the
+ * Auto-Align tool to micro-correct OMR misplacement onto the nearest staff
+ * line or space without changing the note's pitch class. `dx` is reserved
+ * for a future horizontal-alignment iteration; currently always 0.
+ */
+export interface AlignOffset {
+  dx: number;
+  dy: number;
+}
+
+export const ZERO_ALIGN: AlignOffset = { dx: 0, dy: 0 };
+
+function isZeroAlign(o: AlignOffset): boolean {
+  return o.dx === 0 && o.dy === 0;
+}
+
+/**
  * Editing operations that can be undone / redone. Every operation carries
  * enough state to reverse itself without consulting the surrounding context.
  *   - `delete`: the id that was added to deletedNoteIds
  *   - `pitch-shift`: the id and its before/after cumulative shift values
+ *   - `staff-transform`: a staff's affine before / after a drag gesture
+ *   - `add-note`: a user-placed notehead
+ *   - `note-align`: a sub-pixel position correction applied by Auto-Align
  */
 export type EditAction =
   | { kind: 'delete'; id: string }
   | { kind: 'pitch-shift'; id: string; from: number; to: number }
   | { kind: 'staff-transform'; key: StaffKey; from: StaffTransform; to: StaffTransform }
-  | { kind: 'add-note'; note: AddedNote };
+  | { kind: 'add-note'; note: AddedNote }
+  | { kind: 'note-align'; id: string; from: AlignOffset; to: AlignOffset };
 
 interface EditsState {
   deletedNoteIds: ReadonlySet<string>;
   pitchShifts: ReadonlyMap<string, number>;
   staffTransforms: ReadonlyMap<StaffKey, StaffTransform>;
   addedNotes: ReadonlyMap<string, AddedNote>;
+  alignOffsets: ReadonlyMap<string, AlignOffset>;
 }
 
 function isIdentityTransform(t: StaffTransform): boolean {
@@ -52,6 +74,7 @@ function focusNoteIdOf(a: EditAction): string | null {
   if (a.kind === 'delete') return a.id;
   if (a.kind === 'pitch-shift') return a.id;
   if (a.kind === 'add-note') return a.note.id;
+  if (a.kind === 'note-align') return a.id;
   return null;
 }
 
@@ -73,10 +96,16 @@ function applyForward(a: EditAction, edits: EditsState): EditsState {
     else next.set(a.key, a.to);
     return { ...edits, staffTransforms: next };
   }
-  // add-note
-  const next = new Map(edits.addedNotes);
-  next.set(a.note.id, a.note);
-  return { ...edits, addedNotes: next };
+  if (a.kind === 'add-note') {
+    const next = new Map(edits.addedNotes);
+    next.set(a.note.id, a.note);
+    return { ...edits, addedNotes: next };
+  }
+  // note-align — canonical form: identity offset is absent from the map.
+  const next = new Map(edits.alignOffsets);
+  if (isZeroAlign(a.to)) next.delete(a.id);
+  else next.set(a.id, a.to);
+  return { ...edits, alignOffsets: next };
 }
 
 function applyInverse(a: EditAction, edits: EditsState): EditsState {
@@ -97,10 +126,17 @@ function applyInverse(a: EditAction, edits: EditsState): EditsState {
     else next.set(a.key, a.from);
     return { ...edits, staffTransforms: next };
   }
-  // add-note inverse: remove from map
-  const next = new Map(edits.addedNotes);
-  next.delete(a.note.id);
-  return { ...edits, addedNotes: next };
+  if (a.kind === 'add-note') {
+    // add-note inverse: remove from map
+    const next = new Map(edits.addedNotes);
+    next.delete(a.note.id);
+    return { ...edits, addedNotes: next };
+  }
+  // note-align inverse: restore the prior offset (or delete if it was zero)
+  const next = new Map(edits.alignOffsets);
+  if (isZeroAlign(a.from)) next.delete(a.id);
+  else next.set(a.id, a.from);
+  return { ...edits, alignOffsets: next };
 }
 
 export interface HarmonyState {
@@ -206,6 +242,12 @@ export interface HarmonyState {
     requestAddNote(note: AddedNote): void;
     cancelAddNote(): void;
     confirmAddNote(octaveOverride?: number): void;
+    /** Run the Auto-Align algorithm on the currently selected notehead.
+     *  Searches within a 2× bbox window vertically for the nearest staff
+     *  line or space; records a `note-align` EditAction with the resulting
+     *  offset. No-op if no notehead is selected, or if the snap target is
+     *  outside the search window, or if the note is already aligned. */
+    autoAlignSelected(): void;
     undo(): void;
     redo(): void;
     setBravuraLoaded(v: boolean): void;
@@ -259,6 +301,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     pitchShifts: new Map<string, number>(),
     staffTransforms: new Map<StaffKey, StaffTransform>(),
     addedNotes: new Map<string, AddedNote>(),
+    alignOffsets: new Map<string, AlignOffset>(),
   },
   history: { past: [], future: [] },
   save: { status: 'idle', lastPath: null, error: null },
@@ -266,6 +309,16 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
   actions: {
     async loadFixture() {
       set((s) => ({ data: { ...s.data, status: 'loading', error: null } }));
+      // Drop the previous fixture's grayscale pixel buffer; a fresh one
+      // will be populated when the new image's onLoad fires. Lazy-required
+      // so the store has no top-level dependency on geometry-domain code.
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { clearImagePixels } = require('@/lib/staff/imagePixels') as typeof import('@/lib/staff/imagePixels');
+        clearImagePixels();
+      } catch {
+        // Module unavailable (SSR / tests) — nothing to clear.
+      }
       try {
         const raw = await omrClient.upload();
         set(() => ({
@@ -275,6 +328,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
             pitchShifts: new Map<string, number>(),
             staffTransforms: new Map<StaffKey, StaffTransform>(),
             addedNotes: new Map<string, AddedNote>(),
+            alignOffsets: new Map<string, AlignOffset>(),
           },
           history: { past: [], future: [] },
           interaction: {
@@ -520,6 +574,78 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
       const action: EditAction = { kind: 'pitch-shift', id, from, to };
       const nextEdits = applyForward(action, state.edits);
 
+      set((s) => ({
+        edits: nextEdits,
+        history: { past: [...s.history.past, action], future: [] },
+      }));
+    },
+    autoAlignSelected() {
+      const state = get();
+      const id = state.interaction.selectedId;
+      if (!id || !state.data.raw) return;
+
+      // Find the detection AND its owning staff in one pass.
+      let target: { d: typeof state.data.raw.detections[number]['detections'][number]; staffIndex: number } | null = null;
+      for (let i = 0; i < state.data.raw.detections.length; i++) {
+        const staff = state.data.raw.detections[i];
+        if (!staff) continue;
+        for (const d of staff.detections) {
+          if (d.id === id) {
+            target = { d, staffIndex: i };
+            break;
+          }
+        }
+        if (target) break;
+      }
+      if (!target) return;
+      const isNote =
+        target.d.class === 'noteheadBlack' || target.d.class === 'noteheadHalf';
+      if (!isNote) return;
+      const staff = state.data.raw.detections[target.staffIndex];
+      if (!staff) return;
+
+      // Compose current effective position: OMR cx/cy + pitch-shift dy
+      // (which only moves Y) + prior align offset (both axes).
+      const ls = staff.line_spacing;
+      const shift = state.edits.pitchShifts.get(id) ?? 0;
+      const pitchShiftDy = -shift * (ls / 2);
+      const fromOffset: AlignOffset =
+        state.edits.alignOffsets.get(id) ?? ZERO_ALIGN;
+      const effectiveCx = target.d.cx + fromOffset.dx;
+      const effectiveCy = target.d.cy + pitchShiftDy + fromOffset.dy;
+
+      // Lazy imports keep the store free of geometry-domain code at top scope.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { computeAutoAlign } = require('@/lib/staff/autoAlign') as typeof import('@/lib/staff/autoAlign');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { computeAutoAlignIoU } = require('@/lib/staff/iouAlign') as typeof import('@/lib/staff/iouAlign');
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { getImagePixels } = require('@/lib/staff/imagePixels') as typeof import('@/lib/staff/imagePixels');
+
+      // Prefer IoU-based 2D alignment when the image pixel buffer is
+      // available. Falls back to the Y-only line/space snap when it isn't
+      // (image not yet decoded, tainted canvas, etc.) or when the IoU
+      // path declines (no ink in window, IoU below confidence floor).
+      let toOffset: AlignOffset | null = null;
+      const pixels = getImagePixels();
+      if (pixels) {
+        const ioU = computeAutoAlignIoU(
+          target.d,
+          effectiveCx,
+          effectiveCy,
+          pitchShiftDy,
+          pixels,
+        );
+        if (ioU) toOffset = ioU.offset;
+      }
+      if (!toOffset) {
+        toOffset = computeAutoAlign(target.d, effectiveCy, pitchShiftDy, staff);
+      }
+      if (!toOffset) return; // snap target outside the search window
+      if (toOffset.dx === fromOffset.dx && toOffset.dy === fromOffset.dy) return; // already aligned
+
+      const action: EditAction = { kind: 'note-align', id, from: fromOffset, to: toOffset };
+      const nextEdits = applyForward(action, state.edits);
       set((s) => ({
         edits: nextEdits,
         history: { past: [...s.history.past, action], future: [] },

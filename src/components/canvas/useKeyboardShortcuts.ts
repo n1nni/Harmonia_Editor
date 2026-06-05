@@ -132,6 +132,14 @@ export function useKeyboardShortcuts() {
             return;
           }
           break;
+        case 'a':
+        case 'A':
+          if (interaction.selectedId && !pendingDelete) {
+            actions.autoAlignSelected();
+          } else {
+            return;
+          }
+          break;
         case 'Enter':
           if (pendingDelete) {
             if (interaction.deleteFocus === 'cancel') actions.cancelDelete();

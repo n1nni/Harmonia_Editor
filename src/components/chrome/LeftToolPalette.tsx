@@ -9,6 +9,7 @@ import {
 import { ToolButton } from './primitives/ToolButton';
 import { SCALED } from './scale';
 import {
+  AlignNoteIcon,
   ArrowDownIcon,
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -175,17 +176,28 @@ export function LeftToolPalette() {
 
       <div className="my-2 h-px w-5 bg-line-subtle" />
 
-      <ToolButton
-        label="Delete note"
-        shortcut="Del"
-        tooltipSide="right"
-        onClick={() => {
-          if (selectedId) a.requestDelete(selectedId);
-        }}
-        disabled={!has}
-      >
-        <TrashIcon />
-      </ToolButton>
+      <div className="flex flex-col items-center gap-1">
+        <ToolButton
+          label="Auto-align note"
+          shortcut="A"
+          tooltipSide="right"
+          onClick={() => a.autoAlignSelected()}
+          disabled={!has}
+        >
+          <AlignNoteIcon />
+        </ToolButton>
+        <ToolButton
+          label="Delete note"
+          shortcut="Del"
+          tooltipSide="right"
+          onClick={() => {
+            if (selectedId) a.requestDelete(selectedId);
+          }}
+          disabled={!has}
+        >
+          <TrashIcon />
+        </ToolButton>
+      </div>
     </aside>
   );
 }

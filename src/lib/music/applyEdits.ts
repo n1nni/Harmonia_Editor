@@ -1,4 +1,5 @@
 import type { Detection } from '@/types/omr';
+import type { AlignOffset } from '@/lib/store/useHarmonyStore';
 
 /**
  * Shift a notehead detection vertically by a given number of diatonic steps.
@@ -24,4 +25,26 @@ export function applyPitchShiftToDetection(
 
 export function isNoteheadClass(c: Detection['class']): boolean {
   return c === 'noteheadBlack' || c === 'noteheadHalf';
+}
+
+/**
+ * Translate a notehead detection by an `AlignOffset` (pixel-level position
+ * correction from the Auto-Align tool). Pure function; preserves bbox
+ * size, shifts cx / cy and the bbox by (dx, dy). Returns the input
+ * unchanged when the offset is zero (no allocation).
+ */
+export function applyAlignOffsetToDetection(
+  d: Detection,
+  offset: AlignOffset | undefined,
+): Detection {
+  if (!offset || (offset.dx === 0 && offset.dy === 0)) return d;
+  return {
+    ...d,
+    cx: d.cx + offset.dx,
+    cy: d.cy + offset.dy,
+    x1: d.x1 + offset.dx,
+    y1: d.y1 + offset.dy,
+    x2: d.x2 + offset.dx,
+    y2: d.y2 + offset.dy,
+  };
 }

@@ -63,6 +63,9 @@ export const usePitchShifts = () =>
 export const useAddedNotes = () =>
   useHarmonyStore((s) => s.edits.addedNotes);
 
+export const useAlignOffsets = () =>
+  useHarmonyStore((s) => s.edits.alignOffsets);
+
 export const usePendingAddedNote = () =>
   useHarmonyStore((s) => s.interaction.pendingAddedNote);
 
