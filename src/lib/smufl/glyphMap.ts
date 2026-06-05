@@ -24,6 +24,11 @@ export const GLYPH_SPECS: Record<
     codepoint: 0xe0a3,
     bbox: { sw: [0.0, -0.5], ne: [1.18, 0.5] },
   },
+  noteheadWhole: {
+    name: 'noteheadWhole',
+    codepoint: 0xe0a2,
+    bbox: { sw: [0.0, -0.5], ne: [1.688, 0.5] },
+  },
   clefG: {
     name: 'gClef',
     codepoint: 0xe050,

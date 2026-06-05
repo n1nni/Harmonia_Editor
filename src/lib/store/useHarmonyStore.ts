@@ -131,8 +131,11 @@ export interface HarmonyState {
     snapToOtherStaves: boolean;
     /** Active editing tool — drives click routing & cursor.
      *  'select' = default; detection clicks pick notes/glyphs.
-     *  'staff'  = every canvas click picks a staff system. */
+     *  'staff'  = every canvas click picks a staff system.
+     *  'add-note' = canvas clicks add a new notehead at the cursor. */
     activeTool: ActiveTool;
+    /** Duration of new notes placed by the Add-Note tool. */
+    addNoteDuration: AddedNote['duration'];
   };
   interaction: {
     hoveredId: string | null;
@@ -144,6 +147,10 @@ export interface HarmonyState {
     /** Currently selected staff (for staff-level editing). Mutually
      *  exclusive with detection-level selection in interaction.selectedId. */
     selectedStaffKey: StaffKey | null;
+    /** When non-null, an Add-Note popup is showing for this proposed
+     *  note. The popup lets the user pick the octave before the note is
+     *  actually committed to edits.addedNotes / history. */
+    pendingAddedNote: AddedNote | null;
   };
   /**
    * Editing layer over the immutable OMR response. Two delta maps; nothing
@@ -181,6 +188,7 @@ export interface HarmonyState {
     setDpi(dpi: number): void;
     setSnapToOtherStaves(v: boolean): void;
     setActiveTool(tool: ActiveTool): void;
+    setAddNoteDuration(d: AddedNote['duration']): void;
     toggleDebug(k: keyof DebugFlags): void;
     setHovered(id: string | null): void;
     setSelected(id: string | null): void;
@@ -195,6 +203,9 @@ export interface HarmonyState {
     setStaffTransform(key: StaffKey, transform: StaffTransform): void;
     recordStaffTransform(key: StaffKey, from: StaffTransform, to: StaffTransform): void;
     addNote(note: AddedNote): void;
+    requestAddNote(note: AddedNote): void;
+    cancelAddNote(): void;
+    confirmAddNote(octaveOverride?: number): void;
     undo(): void;
     redo(): void;
     setBravuraLoaded(v: boolean): void;
@@ -233,6 +244,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     dpi: 300,
     snapToOtherStaves: true,
     activeTool: 'select',
+    addNoteDuration: 'quarter',
   },
   interaction: {
     hoveredId: null,
@@ -240,6 +252,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     pendingDeleteId: null,
     deleteFocus: 'confirm',
     selectedStaffKey: null,
+    pendingAddedNote: null,
   },
   edits: {
     deletedNoteIds: new Set<string>(),
@@ -270,6 +283,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
             pendingDeleteId: null,
             deleteFocus: 'confirm',
             selectedStaffKey: null,
+            pendingAddedNote: null,
           },
         }));
       } catch (e) {
@@ -324,6 +338,9 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     setSnapToOtherStaves(v) {
       set((s) => ({ display: { ...s.display, snapToOtherStaves: v } }));
     },
+    setAddNoteDuration(d) {
+      set((s) => ({ display: { ...s.display, addNoteDuration: d } }));
+    },
     setActiveTool(tool) {
       set((s) => ({
         display: { ...s.display, activeTool: tool },
@@ -375,6 +392,31 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
       if (isIdentityTransform(transform)) next.delete(key);
       else next.set(key, transform);
       set((s) => ({ edits: { ...s.edits, staffTransforms: next } }));
+    },
+    requestAddNote(note) {
+      set((s) => ({
+        interaction: { ...s.interaction, pendingAddedNote: note },
+      }));
+    },
+    cancelAddNote() {
+      set((s) => ({
+        interaction: { ...s.interaction, pendingAddedNote: null },
+      }));
+    },
+    confirmAddNote(octaveOverride) {
+      const pending = get().interaction.pendingAddedNote;
+      if (!pending) return;
+      const finalNote: AddedNote =
+        octaveOverride !== undefined && octaveOverride !== pending.pitch.octave
+          ? { ...pending, pitch: { ...pending.pitch, octave: octaveOverride } }
+          : pending;
+      const action: EditAction = { kind: 'add-note', note: finalNote };
+      const nextEdits = applyForward(action, get().edits);
+      set((s) => ({
+        edits: nextEdits,
+        history: { past: [...s.history.past, action], future: [] },
+        interaction: { ...s.interaction, pendingAddedNote: null },
+      }));
     },
     addNote(note) {
       const action: EditAction = { kind: 'add-note', note };

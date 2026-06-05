@@ -50,6 +50,8 @@ function humanizeClass(c: Detection['class']): string {
       return 'quarter note';
     case 'noteheadHalf':
       return 'half note';
+    case 'noteheadWhole':
+      return 'whole note';
   }
 }
 

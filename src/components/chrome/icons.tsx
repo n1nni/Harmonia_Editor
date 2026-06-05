@@ -191,3 +191,32 @@ export const PlusNoteIcon = (p: IconProps) => (
     <path d="M11.5 3.5h4M13.5 1.5v4" />
   </I>
 );
+
+export const NoteWholeIcon = (p: IconProps) => (
+  <I {...p}>
+    <ellipse cx="8" cy="8" rx="4.2" ry="3" fill="none" strokeWidth="1.4" />
+    <ellipse cx="8" cy="8" rx="2" ry="1.4" fill="currentColor" stroke="none" transform="rotate(-20 8 8)" />
+  </I>
+);
+
+export const NoteHalfIcon = (p: IconProps) => (
+  <I {...p}>
+    <ellipse cx="5.5" cy="11.5" rx="3" ry="2.2" fill="none" strokeWidth="1.4" />
+    <path d="M8.5 11.5V2.5" />
+  </I>
+);
+
+export const NoteQuarterIcon = (p: IconProps) => (
+  <I {...p}>
+    <ellipse cx="5.5" cy="11.5" rx="3" ry="2.2" fill="currentColor" stroke="none" />
+    <path d="M8.5 11.5V2.5" />
+  </I>
+);
+
+export const NoteEighthIcon = (p: IconProps) => (
+  <I {...p}>
+    <ellipse cx="5.5" cy="11.5" rx="3" ry="2.2" fill="currentColor" stroke="none" />
+    <path d="M8.5 11.5V2.5" />
+    <path d="M8.5 2.5c2.2 1 3.5 2.5 3.5 4.5" />
+  </I>
+);

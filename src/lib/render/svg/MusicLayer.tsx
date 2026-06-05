@@ -141,6 +141,8 @@ const StaffGroup = memo(function StaffGroup({
       ))}
 
       {noteheads.map((d) => {
+        // Whole notes have no stem by engraving convention.
+        if (d.class === 'noteheadWhole') return null;
         const direction: StemDirection = d.cy < middleY ? 'down' : 'up';
         return (
           <Stem

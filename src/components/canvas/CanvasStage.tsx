@@ -13,6 +13,7 @@ import { OverlaySvg } from './OverlaySvg';
 import { InspectorCard } from './InspectorCard';
 import { HoverTooltip } from './HoverTooltip';
 import { DeleteConfirmPopup } from './DeleteConfirmPopup';
+import { AddNotePopup } from './staff/AddNotePopup';
 import { StaffInspector } from './staff/StaffInspector';
 import {
   DragGuidesProvider,
@@ -130,6 +131,7 @@ export function CanvasStage() {
 
       <HoverTooltip />
       <DeleteConfirmPopup />
+      <AddNotePopup />
       <InspectorCard />
 
       <DragGuidesProvider>

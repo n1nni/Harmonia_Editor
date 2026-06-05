@@ -267,10 +267,17 @@ function buildAddedNoteElement(
   pitch.appendChild(octave);
   el.appendChild(pitch);
 
-  const durationMultiplier =
-    note.duration === 'whole' ? 4 : note.duration === 'half' ? 2 : 1;
+  const durationFactor =
+    note.duration === 'whole'
+      ? 4
+      : note.duration === 'half'
+        ? 2
+        : note.duration === 'eighth'
+          ? 0.5
+          : 1; // quarter
+  const durationValue = Math.max(1, Math.round(divisions * durationFactor));
   const duration = doc.createElement('duration');
-  duration.textContent = String(divisions * durationMultiplier);
+  duration.textContent = String(durationValue);
   el.appendChild(duration);
 
   const voice = doc.createElement('voice');
@@ -280,6 +287,13 @@ function buildAddedNoteElement(
   const type = doc.createElement('type');
   type.textContent = note.duration;
   el.appendChild(type);
+
+  // <staff>N</staff> — MusicXML's 1-based within-part staff index. Makes
+  // it explicit which physical staff inside a multi-staff part the added
+  // note lives on (matches the canonical MXL schema for multi-staff parts).
+  const staffEl = doc.createElement('staff');
+  staffEl.textContent = String(note.staffInPart + 1);
+  el.appendChild(staffEl);
 
   return el;
 }

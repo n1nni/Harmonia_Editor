@@ -1,7 +1,11 @@
 'use client';
 
 import { useHarmonyActions } from '@/lib/store/useHarmonyStore';
-import { useActiveTool, useInteraction } from '@/lib/store/selectors';
+import {
+  useActiveTool,
+  useAddNoteDuration,
+  useInteraction,
+} from '@/lib/store/selectors';
 import { ToolButton } from './primitives/ToolButton';
 import { SCALED } from './scale';
 import {
@@ -10,6 +14,10 @@ import {
   ArrowRightIcon,
   ArrowUpIcon,
   CursorIcon,
+  NoteEighthIcon,
+  NoteHalfIcon,
+  NoteQuarterIcon,
+  NoteWholeIcon,
   PlayIcon,
   PlusNoteIcon,
   StaffIcon,
@@ -30,7 +38,9 @@ export function LeftToolPalette() {
   const a = useHarmonyActions();
   const { selectedId } = useInteraction();
   const tool = useActiveTool();
+  const addNoteDuration = useAddNoteDuration();
   const has = Boolean(selectedId);
+  const showDurations = tool === 'add-note';
 
   return (
     <aside
@@ -67,6 +77,47 @@ export function LeftToolPalette() {
         >
           <PlusNoteIcon />
         </ToolButton>
+
+        {showDurations ? (
+          <div className="mt-1 flex flex-col items-center gap-1 rounded-md border border-accent/20 bg-accent/5 p-1">
+            <ToolButton
+              label="Whole note"
+              shortcut="1"
+              tooltipSide="right"
+              onClick={() => a.setAddNoteDuration('whole')}
+              active={addNoteDuration === 'whole'}
+            >
+              <NoteWholeIcon />
+            </ToolButton>
+            <ToolButton
+              label="Half note"
+              shortcut="2"
+              tooltipSide="right"
+              onClick={() => a.setAddNoteDuration('half')}
+              active={addNoteDuration === 'half'}
+            >
+              <NoteHalfIcon />
+            </ToolButton>
+            <ToolButton
+              label="Quarter note"
+              shortcut="4"
+              tooltipSide="right"
+              onClick={() => a.setAddNoteDuration('quarter')}
+              active={addNoteDuration === 'quarter'}
+            >
+              <NoteQuarterIcon />
+            </ToolButton>
+            <ToolButton
+              label="Eighth note"
+              shortcut="8"
+              tooltipSide="right"
+              onClick={() => a.setAddNoteDuration('eighth')}
+              active={addNoteDuration === 'eighth'}
+            >
+              <NoteEighthIcon />
+            </ToolButton>
+          </div>
+        ) : null}
       </div>
 
       <div className="my-2 h-px w-5 bg-line-subtle" />

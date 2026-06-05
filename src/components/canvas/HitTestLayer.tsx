@@ -1,7 +1,13 @@
 'use client';
 
 import { memo, useCallback, useState } from 'react';
-import { useActiveTool, useRaw, useDeletedIds, usePitchShifts } from '@/lib/store/selectors';
+import {
+  useActiveTool,
+  useAddNoteDuration,
+  useDeletedIds,
+  usePitchShifts,
+  useRaw,
+} from '@/lib/store/selectors';
 import { useHarmonyActions } from '@/lib/store/useHarmonyStore';
 import { applyPitchShiftToDetection, isNoteheadClass } from '@/lib/music/applyEdits';
 import { staffContentBboxImage } from '@/lib/staff/bbox';
@@ -10,10 +16,14 @@ import { newAddedNoteId, snapNoteY, type AddedNote } from '@/lib/staff/addedNote
 import { clefKindFromClass } from '@/lib/music/clefs';
 import {
   applyKeySignature,
+  formatPitch,
   pitchFromStepIndex,
+  type Pitch,
 } from '@/lib/music/pitch';
 import { glyphFor } from '@/lib/smufl/glyphMap';
 import { glyphPlacement } from '@/lib/smufl/anchors';
+import { ENGRAVING_DEFAULTS } from '@/lib/smufl/engravingDefaults';
+import type { RawStaff } from '@/types/omr';
 
 /**
  * Tool-dispatching hit-test layer.
@@ -21,7 +31,8 @@ import { glyphPlacement } from '@/lib/smufl/anchors';
  *   Select   → detection rects only (select notes/glyphs)
  *   Staff    → staff bbox rects (select whole staff)
  *   Add-note → staff bbox rects with onPointerMove tracking + a ghost
- *              notehead at the snapped position; click commits the note.
+ *              notehead at the snapped position (with pitch label); click
+ *              commits a note of the currently chosen duration.
  *
  * Selection / commit uses `onPointerDown` rather than `onClick` because
  * the parent canvas container takes `setPointerCapture` on every
@@ -29,19 +40,45 @@ import { glyphPlacement } from '@/lib/smufl/anchors';
  * event on inner SVG elements. `data-no-pan` markers tell `usePanZoom`
  * to skip pan-capture when the gesture starts on one of these rects.
  */
+
+interface GhostState {
+  cx: number;
+  cy: number;
+  staffKey: string;
+  lineSpacing: number;
+  middleY: number;
+  pitch: Pitch | null;
+}
+
+/** Compute clef + key signature once per staff so the ghost can show the
+ *  pitch the user is about to place. Returns null if no clef detected. */
+function inferPitchAt(cy: number, staff: RawStaff): Pitch | null {
+  const sorted = [...staff.detections].sort((a, b) => a.cx - b.cx);
+  const clefDet = sorted.find(
+    (d) => d.class === 'clefG' || d.class === 'clefF' || d.class === 'clef8',
+  );
+  const clef = clefDet ? clefKindFromClass(clefDet.class) : null;
+  if (!clef) return null;
+  const firstNoteX =
+    sorted.find(
+      (d) => d.class === 'noteheadBlack' || d.class === 'noteheadHalf',
+    )?.cx ?? Infinity;
+  const keySharps = sorted.filter(
+    (d) => d.class === 'keySharp' && d.cx < firstNoteX,
+  ).length;
+  const { stepIndex } = snapNoteY(cy, staff);
+  return applyKeySignature(pitchFromStepIndex(stepIndex, clef), keySharps);
+}
+
 export const HitTestLayer = memo(function HitTestLayer() {
   const raw = useRaw();
   const deletedIds = useDeletedIds();
   const pitchShifts = usePitchShifts();
   const tool = useActiveTool();
-  const { setHovered, setSelected, selectStaff, addNote } = useHarmonyActions();
+  const duration = useAddNoteDuration();
+  const { setHovered, setSelected, selectStaff, requestAddNote } = useHarmonyActions();
   const [hoveredStaff, setHoveredStaff] = useState<string | null>(null);
-  const [ghost, setGhost] = useState<{
-    cx: number;
-    cy: number;
-    staffKey: string;
-    lineSpacing: number;
-  } | null>(null);
+  const [ghost, setGhost] = useState<GhostState | null>(null);
 
   const onLeave = useCallback(() => {
     setHovered(null);
@@ -67,6 +104,8 @@ export const HitTestLayer = memo(function HitTestLayer() {
           const inStaffMode = tool === 'staff';
           const inAddMode = tool === 'add-note';
           const isHovered = hoveredStaff === key;
+          const middleY =
+            staff.line_positions[2] ?? (staff.top_y + staff.bot_y) / 2;
           return (
             <rect
               key={`staff-hit-${key}`}
@@ -99,6 +138,8 @@ export const HitTestLayer = memo(function HitTestLayer() {
                   cy: snappedCy,
                   staffKey: key,
                   lineSpacing: staff.line_spacing,
+                  middleY,
+                  pitch: inferPitchAt(local.y, staff),
                 });
               }}
               onPointerLeave={() => {
@@ -114,38 +155,21 @@ export const HitTestLayer = memo(function HitTestLayer() {
                   selectStaff(key);
                   return;
                 }
-                // Add-note mode: commit at the ghost position.
-                if (inAddMode && ghost && ghost.staffKey === key) {
-                  // Determine clef + key sig for pitch inference.
-                  const sorted = [...staff.detections].sort((a, b) => a.cx - b.cx);
-                  const clefDet = sorted.find(
-                    (d) => d.class === 'clefG' || d.class === 'clefF' || d.class === 'clef8',
-                  );
-                  const clef = clefDet ? clefKindFromClass(clefDet.class) : null;
-                  if (!clef) return;
-                  const firstNoteX =
-                    sorted.find(
-                      (d) => d.class === 'noteheadBlack' || d.class === 'noteheadHalf',
-                    )?.cx ?? Infinity;
-                  const keySharps = sorted.filter(
-                    (d) => d.class === 'keySharp' && d.cx < firstNoteX,
-                  ).length;
-                  const { cy: snappedCy, stepIndex } = snapNoteY(ghost.cy, staff);
-                  const pitch = applyKeySignature(
-                    pitchFromStepIndex(stepIndex, clef),
-                    keySharps,
-                  );
+                // Add-note commit — reuse the ghost's snapped position +
+                // pre-computed pitch so what the user saw is exactly what
+                // gets placed.
+                if (inAddMode && ghost && ghost.staffKey === key && ghost.pitch) {
                   const note: AddedNote = {
                     id: newAddedNoteId(),
                     partId: staff.part_id,
                     staffInPart: staff.staff_in_part,
                     cx: ghost.cx,
-                    cy: snappedCy,
-                    duration: 'quarter',
+                    cy: ghost.cy,
+                    duration,
                     voice: 1,
-                    pitch,
+                    pitch: ghost.pitch,
                   };
-                  addNote(note);
+                  requestAddNote(note);
                 }
               }}
             />
@@ -189,30 +213,81 @@ export const HitTestLayer = memo(function HitTestLayer() {
       )}
 
       {/* Ghost notehead preview in Add-note mode. */}
-      {tool === 'add-note' && ghost ? <GhostNotehead ghost={ghost} /> : null}
+      {tool === 'add-note' && ghost ? (
+        <GhostNotehead ghost={ghost} duration={duration} />
+      ) : null}
     </g>
   );
 });
 
 interface GhostProps {
-  ghost: { cx: number; cy: number; lineSpacing: number };
+  ghost: GhostState;
+  duration: AddedNote['duration'];
 }
 
-function GhostNotehead({ ghost }: GhostProps) {
-  const spec = glyphFor('noteheadBlack');
+function GhostNotehead({ ghost, duration }: GhostProps) {
+  const cls =
+    duration === 'whole'
+      ? 'noteheadWhole'
+      : duration === 'half'
+        ? 'noteheadHalf'
+        : 'noteheadBlack';
+  const spec = glyphFor(cls);
   if (!spec) return null;
   const { x, y, fontSize } = glyphPlacement(spec, ghost.cx, ghost.cy, ghost.lineSpacing);
+  const ls = ghost.lineSpacing;
+
+  // Tiny ghost stem so half/quarter/eighth read correctly during placement.
+  const showStem = duration !== 'whole';
+  const stemDirection: 'up' | 'down' = ghost.cy < ghost.middleY ? 'down' : 'up';
+  const stemOffset = 0.54 * ls;
+  const stemLen = 3.5 * ls;
+  const stemX = stemDirection === 'up' ? ghost.cx + stemOffset : ghost.cx - stemOffset;
+  const stemY2 = stemDirection === 'up' ? ghost.cy - stemLen : ghost.cy + stemLen;
+
+  // Pitch label — Inter, image-space tied so it follows pan/zoom but stays
+  // legible via vector-effect.
+  const label = ghost.pitch ? formatPitch(ghost.pitch) : '';
+  const labelFontSize = 1.1 * ls;
+  const labelX = ghost.cx + 0.9 * ls;
+  const labelY = ghost.cy - 1.4 * ls;
+
   return (
-    <g pointerEvents="none" opacity={0.45}>
-      <text
-        x={x}
-        y={y}
-        fontFamily="Bravura"
-        fontSize={fontSize}
-        fill="#F08237"
-      >
-        {String.fromCodePoint(spec.codepoint)}
-      </text>
+    <g pointerEvents="none">
+      <g opacity={0.55}>
+        <text
+          x={x}
+          y={y}
+          fontFamily="Bravura"
+          fontSize={fontSize}
+          fill="#F08237"
+        >
+          {String.fromCodePoint(spec.codepoint)}
+        </text>
+        {showStem ? (
+          <line
+            x1={stemX}
+            y1={ghost.cy}
+            x2={stemX}
+            y2={stemY2}
+            stroke="#F08237"
+            strokeWidth={ENGRAVING_DEFAULTS.stemThickness * ls}
+          />
+        ) : null}
+      </g>
+      {label ? (
+        <text
+          x={labelX}
+          y={labelY}
+          fontFamily="var(--font-inter), sans-serif"
+          fontSize={labelFontSize}
+          fontWeight={600}
+          fill="#F08237"
+          style={{ paintOrder: 'stroke', stroke: '#FFFFFF', strokeWidth: 3 }}
+        >
+          {label}
+        </text>
+      ) : null}
     </g>
   );
 }

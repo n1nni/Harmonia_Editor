@@ -7,6 +7,7 @@
 export type SymbolClass =
   | 'noteheadBlack'
   | 'noteheadHalf'
+  | 'noteheadWhole'
   | 'clefG'
   | 'clefF'
   | 'clef8'

@@ -26,10 +26,13 @@ export const useDisplay = () =>
       dpi: s.display.dpi,
       snapToOtherStaves: s.display.snapToOtherStaves,
       activeTool: s.display.activeTool,
+      addNoteDuration: s.display.addNoteDuration,
     })),
   );
 
 export const useActiveTool = () => useHarmonyStore((s) => s.display.activeTool);
+export const useAddNoteDuration = () =>
+  useHarmonyStore((s) => s.display.addNoteDuration);
 
 export const useDpi = () => useHarmonyStore((s) => s.display.dpi);
 export const useSnapToOtherStaves = () =>
@@ -59,6 +62,9 @@ export const usePitchShifts = () =>
 
 export const useAddedNotes = () =>
   useHarmonyStore((s) => s.edits.addedNotes);
+
+export const usePendingAddedNote = () =>
+  useHarmonyStore((s) => s.interaction.pendingAddedNote);
 
 export const useSave = () =>
   useHarmonyStore(useShallow((s) => s.save));

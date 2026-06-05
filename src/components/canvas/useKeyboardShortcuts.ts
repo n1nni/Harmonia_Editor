@@ -77,6 +77,26 @@ export function useKeyboardShortcuts() {
         case 'N':
           actions.setActiveTool('add-note');
           break;
+        case '1':
+          if (state.display.activeTool === 'add-note') {
+            actions.setAddNoteDuration('whole');
+          } else return;
+          break;
+        case '2':
+          if (state.display.activeTool === 'add-note') {
+            actions.setAddNoteDuration('half');
+          } else return;
+          break;
+        case '4':
+          if (state.display.activeTool === 'add-note') {
+            actions.setAddNoteDuration('quarter');
+          } else return;
+          break;
+        case '8':
+          if (state.display.activeTool === 'add-note') {
+            actions.setAddNoteDuration('eighth');
+          } else return;
+          break;
         case 'f':
         case 'F':
           actions.fitToScreen();

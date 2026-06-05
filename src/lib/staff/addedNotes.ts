@@ -12,7 +12,7 @@ export interface AddedNote {
   staffInPart: number;
   cx: number;                          // image-space centre x
   cy: number;                          // image-space centre y (post-snap)
-  duration: 'whole' | 'half' | 'quarter';
+  duration: 'whole' | 'half' | 'quarter' | 'eighth';
   voice: number;                       // default 1
   pitch: Pitch;
 }
@@ -53,7 +53,11 @@ export function addedNoteToDetection(note: AddedNote, staff: RawStaff): Detectio
   const halfW = 0.59 * ls;
   const halfH = 0.5 * ls;
   const cls: Detection['class'] =
-    note.duration === 'quarter' ? 'noteheadBlack' : 'noteheadHalf';
+    note.duration === 'whole'
+      ? 'noteheadWhole'
+      : note.duration === 'half'
+        ? 'noteheadHalf'
+        : 'noteheadBlack';   // quarter + eighth share the filled head
   return {
     id: note.id,
     class: cls,
