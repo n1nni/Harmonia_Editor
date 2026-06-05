@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Harmony',
+  title: 'Harmonia',
   description:
-    'Vector overlay reconstruction for optically recognized sheet music.',
+    'Vector overlay reconstruction and correction for optically recognised sheet music.',
 };
 
 export const viewport: Viewport = {

@@ -62,7 +62,7 @@ export function CanvasStage() {
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden bg-surface-base"
+      className="relative h-full w-full overflow-hidden bg-surface-canvas"
       style={{ touchAction: 'none' }}
     >
       <BackgroundGrid />
@@ -133,7 +133,7 @@ function BackgroundGrid() {
       className="absolute inset-0"
       style={{
         backgroundImage:
-          'radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px)',
+          'radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px)',
         backgroundSize: '24px 24px',
       }}
     />

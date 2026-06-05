@@ -65,6 +65,33 @@ export function applyKeySignature(p: Pitch, numSharps: number): Pitch {
   return p;
 }
 
+/**
+ * Shift a pitch by `delta` diatonic steps and re-apply the key signature.
+ *
+ *   absolute  = octave * 7 + stepIdx + delta
+ *   newStep   = STEP_LETTERS[absolute mod 7]
+ *   newOctave = floor(absolute / 7)
+ *   newAlter  = +1 if newStep is in the key's sharp set, else 0
+ *
+ * `keyFifths` is the MusicXML `<fifths>` value. Negative values (flats) are
+ * supported by returning natural pitches and letting the caller add an
+ * inline `<alter>` if needed; the current fixture has only sharp keys.
+ */
+export function shiftPitchDiatonic(
+  p: Pitch,
+  delta: number,
+  keyFifths: number,
+): Pitch {
+  if (delta === 0) return p;
+  const absolute = p.octave * 7 + p.stepIdx + delta;
+  const stepIdx = ((absolute % 7) + 7) % 7;
+  const octave = Math.floor(absolute / 7);
+  const step = STEP_LETTERS[stepIdx];
+  if (!step) throw new Error(`Invalid step index ${stepIdx}`);
+  const shifted: Pitch = { step, stepIdx, octave, alter: 0 };
+  return keyFifths > 0 ? applyKeySignature(shifted, keyFifths) : shifted;
+}
+
 /** Formats a Pitch as "A#4", "Bb3", etc. */
 export function formatPitch(p: Pitch | null): string {
   if (!p) return '—';

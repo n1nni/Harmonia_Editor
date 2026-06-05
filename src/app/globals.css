@@ -3,9 +3,7 @@
 @tailwind utilities;
 
 /* Bravura SMuFL music font.
-   Source: https://github.com/steinbergmedia/bravura (SIL Open Font License 1.1).
-   Bundled in /public/fonts/. font-display: block prevents misaligned first paint;
-   we additionally gate the overlay render on document.fonts.load. */
+   Source: https://github.com/steinbergmedia/bravura (SIL Open Font License 1.1). */
 @font-face {
   font-family: 'Bravura';
   src: url('/fonts/Bravura.woff2') format('woff2'),
@@ -18,8 +16,8 @@
 
 html, body {
   height: 100%;
-  background-color: #0B0B0E;
-  color: #EDEDF0;
+  background-color: #F3F3F6;
+  color: #16161C;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -34,12 +32,12 @@ body {
 }
 
 ::selection {
-  background-color: rgba(124, 92, 255, 0.32);
-  color: #EDEDF0;
+  background-color: rgba(100, 66, 255, 0.22);
+  color: #16161C;
 }
 
-/* Subtle scrollbar in dark UI */
+/* Subtle scrollbar in light UI */
 *::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 999px; }
-*::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+*::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.14); border-radius: 999px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
 *::-webkit-scrollbar-track { background: transparent; }

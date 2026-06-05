@@ -21,8 +21,11 @@ export const useDisplay = () =>
       overlayOpacity: s.display.overlayOpacity,
       reconstructionOn: s.display.reconstructionOn,
       debug: s.display.debug,
+      uiScale: s.display.uiScale,
     })),
   );
+
+export const useUiScale = () => useHarmonyStore((s) => s.display.uiScale);
 
 export const useDebugFlags = () => useHarmonyStore(useShallow((s) => s.display.debug));
 
@@ -32,5 +35,21 @@ export const useInteraction = () =>
 export const useDeletedIds = () =>
   useHarmonyStore((s) => s.edits.deletedNoteIds);
 
+export const usePitchShifts = () =>
+  useHarmonyStore((s) => s.edits.pitchShifts);
+
 export const useSave = () =>
   useHarmonyStore(useShallow((s) => s.save));
+
+export const useDeleteFocus = () =>
+  useHarmonyStore((s) => s.interaction.deleteFocus);
+
+export const useHistory = () =>
+  useHarmonyStore(
+    useShallow((s) => ({
+      canUndo: s.history.past.length > 0,
+      canRedo: s.history.future.length > 0,
+      pastCount: s.history.past.length,
+      futureCount: s.history.future.length,
+    })),
+  );

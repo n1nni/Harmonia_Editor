@@ -6,25 +6,29 @@ const config: Config = {
     extend: {
       colors: {
         surface: {
-          base: '#0B0B0E',
-          panel: '#15151A',
-          elevated: '#1F1F26',
-          hover: '#2A2A33',
+          base: '#F3F3F6',
+          panel: '#FFFFFF',
+          elevated: '#FAFAFD',
+          hover: '#EBEBF0',
+          canvas: '#E2E2E8',
         },
         accent: {
-          DEFAULT: '#7C5CFF',
-          muted: '#5A45BF',
-          glow: '#9B82FF',
+          DEFAULT: '#6442FF',
+          muted: '#B9A7FF',
+          glow: '#8A6BFF',
         },
         text: {
-          primary: '#EDEDF0',
-          secondary: '#9A9AA6',
-          tertiary: '#5F5F6B',
+          primary: '#16161C',
+          secondary: '#4A4A55',
+          tertiary: '#82828F',
         },
         line: {
-          subtle: 'rgba(255, 255, 255, 0.05)',
-          DEFAULT: 'rgba(255, 255, 255, 0.08)',
-          strong: 'rgba(255, 255, 255, 0.12)',
+          subtle: 'rgba(0, 0, 0, 0.05)',
+          DEFAULT: 'rgba(0, 0, 0, 0.09)',
+          strong: 'rgba(0, 0, 0, 0.14)',
+        },
+        selection: {
+          glow: '#F08237',
         },
       },
       fontFamily: {
@@ -36,8 +40,9 @@ const config: Config = {
         'label': ['11px', { lineHeight: '14px', letterSpacing: '0.12em' }],
       },
       boxShadow: {
-        'inset-hairline': 'inset 0 1px 0 rgba(255, 255, 255, 0.04)',
-        'panel': '0 1px 0 rgba(255,255,255,0.04) inset, 0 0 0 1px rgba(255,255,255,0.05)',
+        'inset-hairline': 'inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+        'panel': '0 1px 0 rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.06)',
+        'float': '0 8px 24px -8px rgba(20,20,30,0.18), 0 2px 6px rgba(20,20,30,0.06)',
       },
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',

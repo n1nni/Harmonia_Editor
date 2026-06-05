@@ -30,8 +30,11 @@ export function OverlaySvg() {
   const dims = useImageDims();
   const debug = useDebugFlags();
   const bravuraLoaded = useBravuraFont();
+  // When the source image is visible, overlay reads in accent violet.
+  // When the source image is hidden, the reconstruction stands alone on
+  // the light canvas backdrop; switch to near-black for ink-on-paper feel.
   const overlayColor = useHarmonyStore((s) =>
-    s.display.reconstructionOn ? '#7C5CFF' : '#EDEDF0',
+    s.display.reconstructionOn ? '#6442FF' : '#16161C',
   );
 
   if (!dims) return null;

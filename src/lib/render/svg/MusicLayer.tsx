@@ -2,8 +2,9 @@
 
 import { memo } from 'react';
 import type { Detection, RawStaff } from '@/types/omr';
-import { useRaw, useDeletedIds } from '@/lib/store/selectors';
+import { useRaw, useDeletedIds, usePitchShifts } from '@/lib/store/selectors';
 import { glyphFor, renderScaleFor } from '@/lib/smufl/glyphMap';
+import { applyPitchShiftToDetection } from '@/lib/music/applyEdits';
 import { Glyph } from './Glyph';
 import { StaffLines } from './StaffLines';
 import { Beam } from './Beam';
@@ -23,6 +24,7 @@ import { Stem, type StemDirection } from './Stem';
 export const MusicLayer = memo(function MusicLayer() {
   const raw = useRaw();
   const deletedIds = useDeletedIds();
+  const pitchShifts = usePitchShifts();
   if (!raw) return null;
 
   return (
@@ -32,6 +34,7 @@ export const MusicLayer = memo(function MusicLayer() {
           key={`${staff.part_id}-${staff.staff_in_part}`}
           staff={staff}
           deletedIds={deletedIds}
+          pitchShifts={pitchShifts}
         />
       ))}
     </g>
@@ -45,9 +48,14 @@ function isNoteheadClass(c: Detection['class']): boolean {
 interface StaffGroupProps {
   staff: RawStaff;
   deletedIds: ReadonlySet<string>;
+  pitchShifts: ReadonlyMap<string, number>;
 }
 
-const StaffGroup = memo(function StaffGroup({ staff, deletedIds }: StaffGroupProps) {
+const StaffGroup = memo(function StaffGroup({
+  staff,
+  deletedIds,
+  pitchShifts,
+}: StaffGroupProps) {
   const ls = staff.line_spacing;
   // Middle staff line = third element (index 2) in line_positions.
   const middleY = staff.line_positions[2] ?? (staff.top_y + staff.bot_y) / 2;
@@ -58,6 +66,10 @@ const StaffGroup = memo(function StaffGroup({ staff, deletedIds }: StaffGroupPro
   //   3. slurs (strokes)
   //   4. stems (under noteheads so the head visually caps the stem)
   //   5. glyphs (always on top)
+  //
+  // Noteheads carrying a pitch shift are translated vertically here so that
+  // the glyph, the stem, and the implicit stem-direction rule all act on the
+  // shifted position.
   const beams: Detection[] = [];
   const slurs: Detection[] = [];
   const noteheads: Detection[] = [];
@@ -67,8 +79,10 @@ const StaffGroup = memo(function StaffGroup({ staff, deletedIds }: StaffGroupPro
     if (deletedIds.has(d.id)) continue;
     if (d.class === 'beam') beams.push(d);
     else if (d.class === 'slur') slurs.push(d);
-    else if (isNoteheadClass(d.class)) noteheads.push(d);
-    else otherGlyphs.push(d);
+    else if (isNoteheadClass(d.class)) {
+      const shift = pitchShifts.get(d.id) ?? 0;
+      noteheads.push(shift === 0 ? d : applyPitchShiftToDetection(d, shift, ls));
+    } else otherGlyphs.push(d);
   }
 
   return (

@@ -1,7 +1,8 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import { useRaw, useInteraction } from '@/lib/store/selectors';
+import { useRaw, useInteraction, usePitchShifts } from '@/lib/store/selectors';
+import { applyPitchShiftToDetection, isNoteheadClass } from '@/lib/music/applyEdits';
 
 /**
  * Faint glow around the currently hovered or selected detection.
@@ -9,6 +10,7 @@ import { useRaw, useInteraction } from '@/lib/store/selectors';
  */
 export const HoverHighlight = memo(function HoverHighlight() {
   const raw = useRaw();
+  const pitchShifts = usePitchShifts();
   const { hoveredId, selectedId } = useInteraction();
 
   const targets = useMemo(() => {
@@ -17,8 +19,15 @@ export const HoverHighlight = memo(function HoverHighlight() {
     if (ids.size === 0) return [];
     const out: { id: string; selected: boolean; x: number; y: number; w: number; h: number }[] = [];
     for (const staff of raw.detections) {
-      for (const d of staff.detections) {
-        if (!ids.has(d.id)) continue;
+      for (const raw of staff.detections) {
+        if (!ids.has(raw.id)) continue;
+        const shift = isNoteheadClass(raw.class)
+          ? (pitchShifts.get(raw.id) ?? 0)
+          : 0;
+        const d =
+          shift === 0
+            ? raw
+            : applyPitchShiftToDetection(raw, shift, staff.line_spacing);
         out.push({
           id: d.id,
           selected: d.id === selectedId,
@@ -30,7 +39,7 @@ export const HoverHighlight = memo(function HoverHighlight() {
       }
     }
     return out;
-  }, [raw, hoveredId, selectedId]);
+  }, [raw, hoveredId, selectedId, pitchShifts]);
 
   if (targets.length === 0) return null;
 
@@ -41,7 +50,7 @@ export const HoverHighlight = memo(function HoverHighlight() {
         // Selected gets the warm orange used in the user's reference brace.
         // Hovered stays violet so the two states are unambiguous when both
         // are active on different detections at once.
-        const color = t.selected ? '#FF8A3D' : '#7C5CFF';
+        const color = t.selected ? '#F08237' : '#6442FF';
         const fillOpacity = t.selected ? 0.22 : 0.12;
         const strokeWidth = t.selected ? 2 : 1.5;
         return (

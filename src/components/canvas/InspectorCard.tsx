@@ -38,7 +38,7 @@ export function InspectorCard() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.16, ease: [0.22, 1, 0.36, 1] }}
-          className="pointer-events-none absolute bottom-5 left-5 z-10 min-w-[240px] rounded-lg border border-line bg-surface-panel/95 px-4 py-3 shadow-panel backdrop-blur"
+          className="pointer-events-none absolute bottom-5 left-5 z-10 min-w-[240px] rounded-lg border border-line bg-surface-panel px-4 py-3 shadow-float"
         >
           <div className="mb-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-widest text-text-tertiary">
             <span>{selectedId === focus.id ? 'Selected' : 'Hovered'}</span>

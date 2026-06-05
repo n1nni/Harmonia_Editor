@@ -89,7 +89,7 @@ export function HoverTooltip() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 4 }}
         transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-md border border-line bg-surface-elevated/95 px-2.5 py-1 shadow-panel backdrop-blur"
+        className="pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full rounded-md border border-line bg-surface-panel px-2.5 py-1 shadow-float"
         style={{ left: screenX, top: screenY }}
       >
         <span className="font-mono text-[11px] tabular-nums">
@@ -97,7 +97,7 @@ export function HoverTooltip() {
           <span className="mx-1.5 text-text-tertiary/60">·</span>
           {isNote && pitch ? (
             <>
-              <span className="text-accent-glow">{formatPitch(pitch)}</span>
+              <span className="text-accent">{formatPitch(pitch)}</span>
               {note?.mxlDuration ? (
                 <span className="ml-1.5 text-text-secondary">
                   · {note.mxlDuration}
