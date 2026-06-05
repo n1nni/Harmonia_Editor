@@ -162,7 +162,9 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     overlayOpacity: 1,
     reconstructionOn: true,
     debug: { bboxes: false, centers: false, baselines: false, labels: false, grid: false },
-    uiScale: 1,
+    // Default to a compact-ish scale so the bigger base sizes don't
+    // dominate the screen on first load. User can step up in View > UI scale.
+    uiScale: 0.85,
   },
   interaction: {
     hoveredId: null,

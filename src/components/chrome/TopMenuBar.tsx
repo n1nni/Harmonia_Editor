@@ -27,6 +27,7 @@ export function TopMenuBar() {
   const uiScale = display.uiScale;
 
   const UI_SCALES: { label: string; value: number }[] = [
+    { label: 'Compact (70%)', value: 0.7 },
     { label: 'Small (85%)', value: 0.85 },
     { label: 'Normal (100%)', value: 1.0 },
     { label: 'Large (115%)', value: 1.15 },
