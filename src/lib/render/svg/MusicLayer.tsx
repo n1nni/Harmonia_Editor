@@ -2,12 +2,19 @@
 
 import { memo } from 'react';
 import type { Detection, RawStaff } from '@/types/omr';
-import { useRaw, useDeletedIds, usePitchShifts, useStaffTransforms } from '@/lib/store/selectors';
+import {
+  useAddedNotes,
+  useDeletedIds,
+  usePitchShifts,
+  useRaw,
+  useStaffTransforms,
+} from '@/lib/store/selectors';
 import { glyphFor, renderScaleFor } from '@/lib/smufl/glyphMap';
 import { applyPitchShiftToDetection } from '@/lib/music/applyEdits';
 import { staffKey } from '@/lib/staff/keys';
 import { IDENTITY_TRANSFORM, type StaffTransform } from '@/lib/staff/types';
 import { transformToSvg } from '@/lib/staff/transform';
+import { addedNoteToDetection, type AddedNote } from '@/lib/staff/addedNotes';
 import { Glyph } from './Glyph';
 import { StaffLines } from './StaffLines';
 import { Beam } from './Beam';
@@ -29,6 +36,7 @@ export const MusicLayer = memo(function MusicLayer() {
   const deletedIds = useDeletedIds();
   const pitchShifts = usePitchShifts();
   const staffTransforms = useStaffTransforms();
+  const addedNotes = useAddedNotes();
   if (!raw) return null;
 
   return (
@@ -36,6 +44,12 @@ export const MusicLayer = memo(function MusicLayer() {
       {raw.detections.map((staff) => {
         const key = staffKey(staff);
         const transform = staffTransforms.get(key) ?? IDENTITY_TRANSFORM;
+        const added: AddedNote[] = [];
+        addedNotes.forEach((n) => {
+          if (n.partId === staff.part_id && n.staffInPart === staff.staff_in_part) {
+            added.push(n);
+          }
+        });
         return (
           <StaffGroup
             key={key}
@@ -43,6 +57,7 @@ export const MusicLayer = memo(function MusicLayer() {
             deletedIds={deletedIds}
             pitchShifts={pitchShifts}
             transform={transform}
+            addedNotes={added}
           />
         );
       })}
@@ -59,6 +74,7 @@ interface StaffGroupProps {
   deletedIds: ReadonlySet<string>;
   pitchShifts: ReadonlyMap<string, number>;
   transform: StaffTransform;
+  addedNotes: readonly AddedNote[];
 }
 
 const StaffGroup = memo(function StaffGroup({
@@ -66,6 +82,7 @@ const StaffGroup = memo(function StaffGroup({
   deletedIds,
   pitchShifts,
   transform,
+  addedNotes,
 }: StaffGroupProps) {
   const ls = staff.line_spacing;
   // Middle staff line = third element (index 2) in line_positions.
@@ -94,6 +111,16 @@ const StaffGroup = memo(function StaffGroup({
       const shift = pitchShifts.get(d.id) ?? 0;
       noteheads.push(shift === 0 ? d : applyPitchShiftToDetection(d, shift, ls));
     } else otherGlyphs.push(d);
+  }
+
+  // Merge added notes (user-placed) as synthetic noteheads. They flow
+  // through the same Glyph + Stem pipeline as detected notes — including
+  // pitch-shift + deletion via the same id-keyed edit maps.
+  for (const n of addedNotes) {
+    if (deletedIds.has(n.id)) continue;
+    const synth = addedNoteToDetection(n, staff);
+    const shift = pitchShifts.get(synth.id) ?? 0;
+    noteheads.push(shift === 0 ? synth : applyPitchShiftToDetection(synth, shift, ls));
   }
 
   // Per-staff affine transform; identity is the no-op default. SVG applies

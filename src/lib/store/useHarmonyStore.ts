@@ -4,6 +4,7 @@ import type { Vec2 } from '@/lib/geometry/bbox';
 import { omrClient } from '@/lib/omr/client';
 import { getOrderedNoteIds, neighborId } from '@/lib/music/noteSequence';
 import { IDENTITY_TRANSFORM, type StaffKey, type StaffTransform } from '@/lib/staff/types';
+import type { AddedNote } from '@/lib/staff/addedNotes';
 
 export interface ImageDims {
   w: number;
@@ -21,7 +22,7 @@ export interface DebugFlags {
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 export type DeleteFocus = 'confirm' | 'cancel';
-export type ActiveTool = 'select' | 'staff';
+export type ActiveTool = 'select' | 'staff' | 'add-note';
 
 /**
  * Editing operations that can be undone / redone. Every operation carries
@@ -32,16 +33,26 @@ export type ActiveTool = 'select' | 'staff';
 export type EditAction =
   | { kind: 'delete'; id: string }
   | { kind: 'pitch-shift'; id: string; from: number; to: number }
-  | { kind: 'staff-transform'; key: StaffKey; from: StaffTransform; to: StaffTransform };
+  | { kind: 'staff-transform'; key: StaffKey; from: StaffTransform; to: StaffTransform }
+  | { kind: 'add-note'; note: AddedNote };
 
 interface EditsState {
   deletedNoteIds: ReadonlySet<string>;
   pitchShifts: ReadonlyMap<string, number>;
   staffTransforms: ReadonlyMap<StaffKey, StaffTransform>;
+  addedNotes: ReadonlyMap<string, AddedNote>;
 }
 
 function isIdentityTransform(t: StaffTransform): boolean {
   return t.tx === 0 && t.ty === 0 && t.sx === 1 && t.sy === 1 && t.theta === 0;
+}
+
+/** The note id (if any) an EditAction concerns; null for staff-transform. */
+function focusNoteIdOf(a: EditAction): string | null {
+  if (a.kind === 'delete') return a.id;
+  if (a.kind === 'pitch-shift') return a.id;
+  if (a.kind === 'add-note') return a.note.id;
+  return null;
 }
 
 function applyForward(a: EditAction, edits: EditsState): EditsState {
@@ -56,11 +67,16 @@ function applyForward(a: EditAction, edits: EditsState): EditsState {
     else next.set(a.id, a.to);
     return { ...edits, pitchShifts: next };
   }
-  // staff-transform
-  const next = new Map(edits.staffTransforms);
-  if (isIdentityTransform(a.to)) next.delete(a.key);
-  else next.set(a.key, a.to);
-  return { ...edits, staffTransforms: next };
+  if (a.kind === 'staff-transform') {
+    const next = new Map(edits.staffTransforms);
+    if (isIdentityTransform(a.to)) next.delete(a.key);
+    else next.set(a.key, a.to);
+    return { ...edits, staffTransforms: next };
+  }
+  // add-note
+  const next = new Map(edits.addedNotes);
+  next.set(a.note.id, a.note);
+  return { ...edits, addedNotes: next };
 }
 
 function applyInverse(a: EditAction, edits: EditsState): EditsState {
@@ -75,11 +91,16 @@ function applyInverse(a: EditAction, edits: EditsState): EditsState {
     else next.set(a.id, a.from);
     return { ...edits, pitchShifts: next };
   }
-  // staff-transform
-  const next = new Map(edits.staffTransforms);
-  if (isIdentityTransform(a.from)) next.delete(a.key);
-  else next.set(a.key, a.from);
-  return { ...edits, staffTransforms: next };
+  if (a.kind === 'staff-transform') {
+    const next = new Map(edits.staffTransforms);
+    if (isIdentityTransform(a.from)) next.delete(a.key);
+    else next.set(a.key, a.from);
+    return { ...edits, staffTransforms: next };
+  }
+  // add-note inverse: remove from map
+  const next = new Map(edits.addedNotes);
+  next.delete(a.note.id);
+  return { ...edits, addedNotes: next };
 }
 
 export interface HarmonyState {
@@ -173,6 +194,7 @@ export interface HarmonyState {
     selectStaff(key: StaffKey | null): void;
     setStaffTransform(key: StaffKey, transform: StaffTransform): void;
     recordStaffTransform(key: StaffKey, from: StaffTransform, to: StaffTransform): void;
+    addNote(note: AddedNote): void;
     undo(): void;
     redo(): void;
     setBravuraLoaded(v: boolean): void;
@@ -223,6 +245,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     deletedNoteIds: new Set<string>(),
     pitchShifts: new Map<string, number>(),
     staffTransforms: new Map<StaffKey, StaffTransform>(),
+    addedNotes: new Map<string, AddedNote>(),
   },
   history: { past: [], future: [] },
   save: { status: 'idle', lastPath: null, error: null },
@@ -238,6 +261,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
             deletedNoteIds: new Set<string>(),
             pitchShifts: new Map<string, number>(),
             staffTransforms: new Map<StaffKey, StaffTransform>(),
+            addedNotes: new Map<string, AddedNote>(),
           },
           history: { past: [], future: [] },
           interaction: {
@@ -352,6 +376,14 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
       else next.set(key, transform);
       set((s) => ({ edits: { ...s.edits, staffTransforms: next } }));
     },
+    addNote(note) {
+      const action: EditAction = { kind: 'add-note', note };
+      const nextEdits = applyForward(action, get().edits);
+      set((s) => ({
+        edits: nextEdits,
+        history: { past: [...s.history.past, action], future: [] },
+      }));
+    },
     recordStaffTransform(key, from, to) {
       // If from === to, the user committed a no-op gesture; skip history.
       const same =
@@ -456,7 +488,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
       const last = state.history.past[state.history.past.length - 1];
       if (!last) return;
       const nextEdits = applyInverse(last, state.edits);
-      const focusedNoteId = last.kind === 'staff-transform' ? null : last.id;
+      const focusedNoteId = focusNoteIdOf(last);
       const focusedStaffKey = last.kind === 'staff-transform' ? last.key : null;
       set((s) => ({
         edits: nextEdits,
@@ -478,7 +510,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
       const next = state.history.future[state.history.future.length - 1];
       if (!next) return;
       const nextEdits = applyForward(next, state.edits);
-      const focusedNoteId = next.kind === 'staff-transform' ? null : next.id;
+      const focusedNoteId = focusNoteIdOf(next);
       const focusedStaffKey = next.kind === 'staff-transform' ? next.key : null;
       set((s) => ({
         edits: nextEdits,
@@ -510,6 +542,8 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
           state.edits.deletedNoteIds,
           state.edits.pitchShifts,
           state.edits.staffTransforms,
+          state.edits.addedNotes,
+          raw,
         );
         const res = await fetch('/api/save-xml', {
           method: 'POST',

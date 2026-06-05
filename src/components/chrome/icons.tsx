@@ -183,3 +183,11 @@ export const StaffIcon = (p: IconProps) => (
     <path d="M2 4.5h12M2 6.75h12M2 9h12M2 11.25h12M2 13.5h12" strokeWidth="1.2" />
   </I>
 );
+
+export const PlusNoteIcon = (p: IconProps) => (
+  <I {...p}>
+    <ellipse cx="5.5" cy="11" rx="3" ry="2.2" fill="currentColor" stroke="none" />
+    <path d="M8.5 11V3" />
+    <path d="M11.5 3.5h4M13.5 1.5v4" />
+  </I>
+);

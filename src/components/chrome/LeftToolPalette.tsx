@@ -11,6 +11,7 @@ import {
   ArrowUpIcon,
   CursorIcon,
   PlayIcon,
+  PlusNoteIcon,
   StaffIcon,
   TrashIcon,
 } from './icons';
@@ -56,6 +57,15 @@ export function LeftToolPalette() {
           active={tool === 'staff'}
         >
           <StaffIcon />
+        </ToolButton>
+        <ToolButton
+          label="Add note"
+          shortcut="N"
+          tooltipSide="right"
+          onClick={() => a.setActiveTool('add-note')}
+          active={tool === 'add-note'}
+        >
+          <PlusNoteIcon />
         </ToolButton>
       </div>
 

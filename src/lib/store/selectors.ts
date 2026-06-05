@@ -57,6 +57,9 @@ export const useDeletedIds = () =>
 export const usePitchShifts = () =>
   useHarmonyStore((s) => s.edits.pitchShifts);
 
+export const useAddedNotes = () =>
+  useHarmonyStore((s) => s.edits.addedNotes);
+
 export const useSave = () =>
   useHarmonyStore(useShallow((s) => s.save));
 

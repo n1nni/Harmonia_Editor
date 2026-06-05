@@ -73,6 +73,10 @@ export function useKeyboardShortcuts() {
         case 'S':
           actions.setActiveTool('staff');
           break;
+        case 'n':
+        case 'N':
+          actions.setActiveTool('add-note');
+          break;
         case 'f':
         case 'F':
           actions.fitToScreen();

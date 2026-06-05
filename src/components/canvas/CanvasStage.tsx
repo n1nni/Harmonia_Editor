@@ -69,7 +69,10 @@ export function CanvasStage() {
     <div
       ref={containerRef}
       className="relative h-full w-full overflow-hidden bg-surface-canvas"
-      style={{ touchAction: 'none', cursor: activeTool === 'staff' ? 'crosshair' : undefined }}
+      style={{
+        touchAction: 'none',
+        cursor: activeTool === 'staff' || activeTool === 'add-note' ? 'crosshair' : undefined,
+      }}
     >
       <BackgroundGrid />
 
