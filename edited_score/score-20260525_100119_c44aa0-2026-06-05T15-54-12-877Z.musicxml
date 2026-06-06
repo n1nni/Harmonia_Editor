@@ -71,7 +71,8 @@
         <duration>4</duration>
         <voice>1</voice>
         <type>quarter</type>
-      </note><note default-x="45.68" default-y="-10.00" id="add_0001"><pitch><step>D</step><octave>2</octave></pitch><duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff></note>
+      </note><note default-x="45.68" default-y="-10.00" id="add_0001">
+      <pitch><step>D</step><octave>2</octave></pitch><duration>16</duration><voice>1</voice><type>whole</type><staff>1</staff></note>
       <note default-x="75.82" default-y="-20.82" id="det_0005">
         <pitch>
           <step>B</step>

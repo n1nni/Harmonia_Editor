@@ -34,15 +34,15 @@
                 {
                     "class": "noteheadBlack",
                     "conf": 0.9239,
-                    "cx": 403,
-                    "cy": 110,
+                    "cx": 410,
+                    "cy": 116,
                     "id": "det_0003",
                     "part_id": "P1",
                     "staff_in_part": 0,
-                    "x1": 393,
-                    "x2": 413,
-                    "y1": 101,
-                    "y2": 119
+                    "x1": 400,
+                    "x2": 420,
+                    "y1": 107,
+                    "y2": 125
                 },
                 {
                     "class": "noteheadHalf",
@@ -60,28 +60,28 @@
                 {
                     "class": "noteheadBlack",
                     "conf": 0.9233,
-                    "cx": 514,
+                    "cx": 510,
                     "cy": 110,
                     "id": "det_0005",
                     "part_id": "P1",
                     "staff_in_part": 0,
-                    "x1": 504,
-                    "x2": 524,
+                    "x1": 500,
+                    "x2": 520,
                     "y1": 101,
                     "y2": 119
                 },
                 {
                     "class": "noteheadBlack",
                     "conf": 0.922,
-                    "cx": 625,
-                    "cy": 110,
+                    "cx": 629,
+                    "cy": 106,
                     "id": "det_0006",
                     "part_id": "P1",
                     "staff_in_part": 0,
-                    "x1": 615,
-                    "x2": 635,
-                    "y1": 102,
-                    "y2": 118
+                    "x1": 619,
+                    "x2": 639,
+                    "y1": 98,
+                    "y2": 114
                 },
                 {
                     "class": "noteheadBlack",

@@ -13,7 +13,11 @@ export class FixtureOmrClient implements OmrClient {
   constructor(private readonly fixtureUrl: string = '/fixtures/omrResponse.json') {}
 
   async upload(): Promise<OmrResponse> {
-    const res = await fetch(this.fixtureUrl, { cache: 'force-cache' });
+    // `no-store` so edits to the fixture JSON during development show up
+    // on every refresh without manual cache busting. In production this
+    // would normally be cached, but Phase 1's fixture loader is itself a
+    // dev-only path — the real client will hit a server endpoint.
+    const res = await fetch(this.fixtureUrl, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`Fixture fetch failed: ${res.status} ${res.statusText}`);
     }
