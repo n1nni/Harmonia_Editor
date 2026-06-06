@@ -10,6 +10,7 @@ import { TopToolbar } from './chrome/TopToolbar';
 import { LeftToolPalette } from './chrome/LeftToolPalette';
 import { StatusBar } from './chrome/StatusBar';
 import { SCALED } from './chrome/scale';
+import { ClassificationPanel } from './analysis/ClassificationPanel';
 
 /**
  * Top-level composition. Loads the fixture on mount and arranges the
@@ -53,6 +54,8 @@ export function HarmonyApp() {
       </section>
 
       <div className="col-span-2 row-start-4"><StatusBar /></div>
+
+      <ClassificationPanel />
     </main>
   );
 }

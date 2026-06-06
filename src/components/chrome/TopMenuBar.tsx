@@ -198,6 +198,13 @@ export function TopMenuBar() {
             </MenuSubmenu>
           </Menu>
 
+          <Menu label="Analysis">
+            <MenuItem
+              label="Classification…"
+              onSelect={() => a.setClassificationPanelOpen(true)}
+            />
+          </Menu>
+
           <Menu label="Sequence">
             <MenuItem
               label="Start from first note"

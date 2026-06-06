@@ -49,6 +49,9 @@ export const useStaffTransforms = () =>
 export const useStaffInspectorVisible = () =>
   useHarmonyStore((s) => s.display.staffInspectorVisible);
 
+export const useClassificationPanelOpen = () =>
+  useHarmonyStore((s) => s.display.classificationPanelOpen);
+
 export const useDebugFlags = () => useHarmonyStore(useShallow((s) => s.display.debug));
 
 export const useInteraction = () =>

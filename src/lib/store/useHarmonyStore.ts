@@ -172,6 +172,9 @@ export interface HarmonyState {
     activeTool: ActiveTool;
     /** Duration of new notes placed by the Add-Note tool. */
     addNoteDuration: AddedNote['duration'];
+    /** When true, the Classification Analysis panel is open as a modal
+     *  over the canvas (cluster similarity + pattern analysis charts). */
+    classificationPanelOpen: boolean;
   };
   interaction: {
     hoveredId: string | null;
@@ -221,6 +224,7 @@ export interface HarmonyState {
     setReconstructionOn(v: boolean): void;
     setUiScale(scale: number): void;
     setStaffInspectorVisible(v: boolean): void;
+    setClassificationPanelOpen(v: boolean): void;
     setDpi(dpi: number): void;
     setSnapToOtherStaves(v: boolean): void;
     setActiveTool(tool: ActiveTool): void;
@@ -287,6 +291,7 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     snapToOtherStaves: true,
     activeTool: 'select',
     addNoteDuration: 'quarter',
+    classificationPanelOpen: false,
   },
   interaction: {
     hoveredId: null,
@@ -384,6 +389,9 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
     },
     setStaffInspectorVisible(v) {
       set((s) => ({ display: { ...s.display, staffInspectorVisible: v } }));
+    },
+    setClassificationPanelOpen(v) {
+      set((s) => ({ display: { ...s.display, classificationPanelOpen: v } }));
     },
     setDpi(dpi) {
       const clamped = clamp(dpi, 24, 2400);
