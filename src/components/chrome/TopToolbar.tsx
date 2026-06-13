@@ -8,6 +8,7 @@ import {
   useSave,
   useViewport,
 } from '@/lib/store/selectors';
+import { ZoomToolbar } from './ZoomToolbar';
 import { ToolButton } from './primitives/ToolButton';
 import { SCALED } from './scale';
 import {
@@ -43,13 +44,14 @@ export function TopToolbar() {
   const pitchShifts = usePitchShifts();
   const ready = useHarmonyStore((s) => s.data.status === 'ready');
   const edits = deletedIds.size + pitchShifts.size;
+  const zoomToolActive = display.activeTool === 'zoom';
 
   return (
     <div
       className="flex items-center gap-1 border-b border-line-subtle bg-surface-panel px-3"
       style={{ height: SCALED.toolbarHeight }}
     >
-      {/* File */}
+      {/* File — always visible regardless of active tool */}
       <Group>
         <ToolButton label="Upload score" shortcut="Ctrl+O" onClick={() => void a.loadFixture()}>
           <UploadIcon />
@@ -64,86 +66,93 @@ export function TopToolbar() {
 
       <Sep />
 
-      {/* Viewport */}
-      <Group>
-        <ToolButton label="Fit to screen" shortcut="F" onClick={a.fitToScreen}>
-          <FitIcon />
-        </ToolButton>
-        <ToolButton label="Zoom out" shortcut="-" onClick={() => a.setZoom(zoom / 1.2)}>
-          <ZoomOutIcon />
-        </ToolButton>
-        <span
-          className="inline-flex items-center justify-center rounded-md border border-line bg-surface-elevated px-2 font-mono tabular-nums text-text-secondary"
-          style={{
-            height: SCALED.buttonSize,
-            minWidth: SCALED.chipMinWidth,
-            fontSize: SCALED.chipSize,
-          }}
-        >
-          {(zoom * 100).toFixed(0)}%
-        </span>
-        <ToolButton label="Zoom in" shortcut="+" onClick={() => a.setZoom(zoom * 1.2)}>
-          <ZoomInIcon />
-        </ToolButton>
-      </Group>
+      {/* Context-specific middle — Zoom tool replaces Viewport / Display / Debug */}
+      {zoomToolActive ? (
+        <ZoomToolbar />
+      ) : (
+        <>
+          {/* Viewport */}
+          <Group>
+            <ToolButton label="Fit to screen" shortcut="F" onClick={a.fitToScreen}>
+              <FitIcon />
+            </ToolButton>
+            <ToolButton label="Zoom out" shortcut="-" onClick={() => a.setZoom(zoom / 1.2)}>
+              <ZoomOutIcon />
+            </ToolButton>
+            <span
+              className="inline-flex items-center justify-center rounded-md border border-line bg-surface-elevated px-2 font-mono tabular-nums text-text-secondary"
+              style={{
+                height: SCALED.buttonSize,
+                minWidth: SCALED.chipMinWidth,
+                fontSize: SCALED.chipSize,
+              }}
+            >
+              {(zoom * 100).toFixed(0)}%
+            </span>
+            <ToolButton label="Zoom in" shortcut="+" onClick={() => a.setZoom(zoom * 1.2)}>
+              <ZoomInIcon />
+            </ToolButton>
+          </Group>
 
-      <Sep />
+          <Sep />
 
-      {/* Display */}
-      <Group>
-        <ToolButton
-          label={display.reconstructionOn ? 'Hide source image' : 'Show source image'}
-          onClick={() => a.setReconstructionOn(!display.reconstructionOn)}
-          active={display.reconstructionOn}
-        >
-          {display.reconstructionOn ? <EyeIcon /> : <EyeOffIcon />}
-        </ToolButton>
-        <OpacitySlider
-          value={display.overlayOpacity}
-          onChange={(v) => a.setOverlayOpacity(v)}
-        />
-      </Group>
+          {/* Display */}
+          <Group>
+            <ToolButton
+              label={display.reconstructionOn ? 'Hide source image' : 'Show source image'}
+              onClick={() => a.setReconstructionOn(!display.reconstructionOn)}
+              active={display.reconstructionOn}
+            >
+              {display.reconstructionOn ? <EyeIcon /> : <EyeOffIcon />}
+            </ToolButton>
+            <OpacitySlider
+              value={display.overlayOpacity}
+              onChange={(v) => a.setOverlayOpacity(v)}
+            />
+          </Group>
 
-      <Sep />
+          <Sep />
 
-      {/* Debug */}
-      <Group>
-        <ToolButton
-          label="Bounding boxes"
-          onClick={() => a.toggleDebug('bboxes')}
-          active={display.debug.bboxes}
-        >
-          <BboxIcon />
-        </ToolButton>
-        <ToolButton
-          label="Centers"
-          onClick={() => a.toggleDebug('centers')}
-          active={display.debug.centers}
-        >
-          <DotIcon />
-        </ToolButton>
-        <ToolButton
-          label="Staff baselines"
-          onClick={() => a.toggleDebug('baselines')}
-          active={display.debug.baselines}
-        >
-          <RulerIcon />
-        </ToolButton>
-        <ToolButton
-          label="Class labels"
-          onClick={() => a.toggleDebug('labels')}
-          active={display.debug.labels}
-        >
-          <LabelIcon />
-        </ToolButton>
-        <ToolButton
-          label="Image grid"
-          onClick={() => a.toggleDebug('grid')}
-          active={display.debug.grid}
-        >
-          <GridIcon />
-        </ToolButton>
-      </Group>
+          {/* Debug */}
+          <Group>
+            <ToolButton
+              label="Bounding boxes"
+              onClick={() => a.toggleDebug('bboxes')}
+              active={display.debug.bboxes}
+            >
+              <BboxIcon />
+            </ToolButton>
+            <ToolButton
+              label="Centers"
+              onClick={() => a.toggleDebug('centers')}
+              active={display.debug.centers}
+            >
+              <DotIcon />
+            </ToolButton>
+            <ToolButton
+              label="Staff baselines"
+              onClick={() => a.toggleDebug('baselines')}
+              active={display.debug.baselines}
+            >
+              <RulerIcon />
+            </ToolButton>
+            <ToolButton
+              label="Class labels"
+              onClick={() => a.toggleDebug('labels')}
+              active={display.debug.labels}
+            >
+              <LabelIcon />
+            </ToolButton>
+            <ToolButton
+              label="Image grid"
+              onClick={() => a.toggleDebug('grid')}
+              active={display.debug.grid}
+            >
+              <GridIcon />
+            </ToolButton>
+          </Group>
+        </>
+      )}
     </div>
   );
 }

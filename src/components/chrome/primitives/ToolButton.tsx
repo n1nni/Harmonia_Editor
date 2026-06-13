@@ -15,6 +15,11 @@ interface ToolButtonProps {
   tooltipSide?: 'top' | 'right' | 'bottom';
   /** Set when the button is decorative (e.g. zoom % chip in toolbar). */
   asChip?: boolean;
+  /** Optional tooltip override shown ONLY while the button is disabled.
+   *  Intended for buttons whose prerequisite is non-obvious — e.g.
+   *  "Fit Selection — select a note first". Suppresses the shortcut
+   *  display because the shortcut alone cannot enable the button. */
+  disabledHint?: string;
 }
 
 /**
@@ -34,7 +39,13 @@ export function ToolButton({
   children,
   tooltipSide = 'bottom',
   asChip,
+  disabledHint,
 }: ToolButtonProps) {
+  // When the button is disabled AND a hint is set, prefer the hint as
+  // the tooltip and drop the shortcut line. Otherwise use the default
+  // `label` + `shortcut` combo.
+  const tooltipLabel = disabled && disabledHint ? disabledHint : label;
+  const tooltipShortcut = disabled && disabledHint ? undefined : shortcut;
   const btn = (
     <button
       type="button"
@@ -63,9 +74,9 @@ export function ToolButton({
     </button>
   );
 
-  if (!label) return btn;
+  if (!tooltipLabel) return btn;
   return (
-    <Tooltip label={label} shortcut={shortcut} side={tooltipSide}>
+    <Tooltip label={tooltipLabel} shortcut={tooltipShortcut} side={tooltipSide}>
       {btn}
     </Tooltip>
   );

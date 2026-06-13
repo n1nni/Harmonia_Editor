@@ -15,6 +15,7 @@ import {
   ArrowRightIcon,
   ArrowUpIcon,
   CursorIcon,
+  MagnifierIcon,
   NoteEighthIcon,
   NoteHalfIcon,
   NoteQuarterIcon,
@@ -77,6 +78,15 @@ export function LeftToolPalette() {
           active={tool === 'add-note'}
         >
           <PlusNoteIcon />
+        </ToolButton>
+        <ToolButton
+          label="Zoom tool"
+          shortcut="Z"
+          tooltipSide="right"
+          onClick={() => a.setActiveTool('zoom')}
+          active={tool === 'zoom'}
+        >
+          <MagnifierIcon />
         </ToolButton>
 
         {showDurations ? (

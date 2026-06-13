@@ -75,7 +75,7 @@
       <note default-x="75.82" default-y="-20.82" id="det_0005">
         <pitch>
           <step>B</step>
-          <octave>3</octave>
+          <octave>3<x>
         </pitch>
         <duration>4</duration>
         <voice>1</voice>

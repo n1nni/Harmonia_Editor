@@ -22,7 +22,18 @@ export interface DebugFlags {
 export type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 export type DeleteFocus = 'confirm' | 'cancel';
-export type ActiveTool = 'select' | 'staff' | 'add-note';
+export type ActiveTool = 'select' | 'staff' | 'add-note' | 'zoom';
+
+/** Snapshot of the navigable viewport state, used by zoom navigation
+ *  history (Prev / Next zoom). `fitScale` is intentionally NOT stored:
+ *  it is a derived quantity from container + image dimensions and is
+ *  recomputed on resize. Restoring zoom + pan against the current
+ *  `fitScale` is the right semantic when the container has resized
+ *  between push and pop. */
+export interface ViewportSnapshot {
+  zoom: number;
+  pan: Vec2;
+}
 
 /**
  * Pixel-level position offset applied to a single notehead. Used by the
@@ -151,6 +162,15 @@ export interface HarmonyState {
     pan: Vec2;
     fitScale: number;
     containerSize: { w: number; h: number } | null;
+    /** Linear navigation history for Prev / Next zoom. Cleared on
+     *  `loadFixture`. Pushed by the debounced ViewportHistoryRecorder
+     *  and by discrete zoom-tool actions; mutually-inverse with the
+     *  EditAction undo/redo stack — these only restore viewport,
+     *  never content. */
+    history: {
+      past: ViewportSnapshot[];
+      future: ViewportSnapshot[];
+    };
   };
   display: {
     overlayOpacity: number;
@@ -256,11 +276,22 @@ export interface HarmonyState {
     redo(): void;
     setBravuraLoaded(v: boolean): void;
     saveEditedXml(): Promise<void>;
+    /** Zoom-tool navigation actions. `pushViewportHistory` records the
+     *  current viewport before a discrete zoom action; `viewportPrev`
+     *  and `viewportNext` walk the history stacks symmetrically. */
+    pushViewportHistory(): void;
+    viewportPrev(): void;
+    viewportNext(): void;
   };
 }
 
-const MIN_ZOOM = 0.1;
-const MAX_ZOOM = 20;
+// Inkscape-style limits expressed as raw user-facing zoom (1 == 100 %).
+// These multiply with `fitScale` to produce the on-screen scale; the
+// effective screen scale therefore depends on the fit-to-container
+// baseline. Constants are exported so tests + zoom utilities can clamp
+// without copy-pasting magic numbers.
+const MIN_ZOOM = 0.05; //   5 %
+const MAX_ZOOM = 64;   // 6400 %
 
 function clamp(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
@@ -278,7 +309,13 @@ function computeFitScale(
 
 export const useHarmonyStore = create<HarmonyState>((set, get) => ({
   data: { raw: null, imageDims: null, status: 'idle', error: null },
-  viewport: { zoom: 1, pan: { x: 0, y: 0 }, fitScale: 1, containerSize: null },
+  viewport: {
+    zoom: 1,
+    pan: { x: 0, y: 0 },
+    fitScale: 1,
+    containerSize: null,
+    history: { past: [], future: [] },
+  },
   display: {
     overlayOpacity: 1,
     reconstructionOn: true,
@@ -343,6 +380,17 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
             deleteFocus: 'confirm',
             selectedStaffKey: null,
             pendingAddedNote: null,
+          },
+        }));
+        // Reset the viewport navigation history on every fresh fixture
+        // load so stale snapshots from the previous score don't pollute
+        // Prev/Next. (This is done in a follow-up set call to avoid
+        // resetting the live zoom/pan which the user may have already
+        // adjusted before loadFixture resolved.)
+        set((s) => ({
+          viewport: {
+            ...s.viewport,
+            history: { past: [], future: [] },
           },
         }));
       } catch (e) {
@@ -700,6 +748,62 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
           selectedStaffKey: focusedStaffKey ?? s.interaction.selectedStaffKey,
           pendingDeleteId: null,
           deleteFocus: 'confirm',
+        },
+      }));
+    },
+    pushViewportHistory() {
+      const s = get();
+      const cur: ViewportSnapshot = { zoom: s.viewport.zoom, pan: s.viewport.pan };
+      const last = s.viewport.history.past[s.viewport.history.past.length - 1];
+      // De-duplicate consecutive identical snapshots.
+      if (last && last.zoom === cur.zoom && last.pan.x === cur.pan.x && last.pan.y === cur.pan.y) {
+        return;
+      }
+      set((st) => ({
+        viewport: {
+          ...st.viewport,
+          history: {
+            past: [...st.viewport.history.past, cur],
+            future: [], // any new push truncates the redo branch
+          },
+        },
+      }));
+    },
+    viewportPrev() {
+      const s = get();
+      const past = s.viewport.history.past;
+      if (past.length === 0) return;
+      const target = past[past.length - 1];
+      if (!target) return;
+      const cur: ViewportSnapshot = { zoom: s.viewport.zoom, pan: s.viewport.pan };
+      set((st) => ({
+        viewport: {
+          ...st.viewport,
+          zoom: target.zoom,
+          pan: target.pan,
+          history: {
+            past: past.slice(0, -1),
+            future: [...st.viewport.history.future, cur],
+          },
+        },
+      }));
+    },
+    viewportNext() {
+      const s = get();
+      const future = s.viewport.history.future;
+      if (future.length === 0) return;
+      const target = future[future.length - 1];
+      if (!target) return;
+      const cur: ViewportSnapshot = { zoom: s.viewport.zoom, pan: s.viewport.pan };
+      set((st) => ({
+        viewport: {
+          ...st.viewport,
+          zoom: target.zoom,
+          pan: target.pan,
+          history: {
+            past: [...st.viewport.history.past, cur],
+            future: future.slice(0, -1),
+          },
         },
       }));
     },

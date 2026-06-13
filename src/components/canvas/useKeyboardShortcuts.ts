@@ -77,6 +77,13 @@ export function useKeyboardShortcuts() {
         case 'N':
           actions.setActiveTool('add-note');
           break;
+        case 'z':
+        case 'Z':
+          // Ctrl/Cmd+Z is undo (handled earlier in this function); here
+          // we reach only the unmodified `Z` key, which activates the
+          // Zoom Tool.
+          actions.setActiveTool('zoom');
+          break;
         case '1':
           if (state.display.activeTool === 'add-note') {
             actions.setAddNoteDuration('whole');

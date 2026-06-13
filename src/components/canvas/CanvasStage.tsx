@@ -20,7 +20,9 @@ import {
   StaffHandlesLayer,
 } from './staff/StaffHandlesLayer';
 import { SnapGuides } from './staff/SnapGuides';
+import { ZoomInteractionLayer } from './ZoomInteractionLayer';
 import { usePanZoom } from './usePanZoom';
+import { useViewportHistoryRecorder } from '@/hooks/canvas/useViewportHistoryRecorder';
 
 /**
  * The interactive canvas. Owns:
@@ -52,6 +54,7 @@ export function CanvasStage() {
   }, [setContainerSize]);
 
   usePanZoom(containerRef);
+  useViewportHistoryRecorder();
 
   // Compute the canvas-stage transform. When dims are not yet known we
   // still mount the <img> off-screen so the load event can fire.
@@ -72,7 +75,12 @@ export function CanvasStage() {
       className="relative h-full w-full overflow-hidden bg-surface-canvas"
       style={{
         touchAction: 'none',
-        cursor: activeTool === 'staff' || activeTool === 'add-note' ? 'crosshair' : undefined,
+        cursor:
+          activeTool === 'staff' || activeTool === 'add-note'
+            ? 'crosshair'
+            : activeTool === 'zoom'
+              ? 'zoom-in'
+              : undefined,
       }}
     >
       <BackgroundGrid />
@@ -128,6 +136,8 @@ export function CanvasStage() {
       ) : null}
 
       {!ready ? <BackdropSkeleton /> : null}
+
+      {activeTool === 'zoom' ? <ZoomInteractionLayer /> : null}
 
       <HoverTooltip />
       <DeleteConfirmPopup />

@@ -15,6 +15,16 @@ export const useViewport = () =>
     })),
   );
 
+export const useViewportHistory = () =>
+  useHarmonyStore(
+    useShallow((s) => ({
+      canPrev: s.viewport.history.past.length > 0,
+      canNext: s.viewport.history.future.length > 0,
+      pastCount: s.viewport.history.past.length,
+      futureCount: s.viewport.history.future.length,
+    })),
+  );
+
 export const useDisplay = () =>
   useHarmonyStore(
     useShallow((s) => ({

@@ -231,3 +231,74 @@ export const AlignNoteIcon = (p: IconProps) => (
     <path d="M11 3v5M9.5 6L11 7.5 12.5 6" strokeWidth="1.3" />
   </I>
 );
+
+/* ---------- Zoom Tool icons ---------- */
+
+export const MagnifierIcon = (p: IconProps) => (
+  <I {...p}>
+    <circle cx="6.5" cy="6.5" r="4" />
+    <path d="M9.5 9.5L13.5 13.5" />
+  </I>
+);
+
+export const MagnifierPlusIcon = (p: IconProps) => (
+  <I {...p}>
+    <circle cx="6.5" cy="6.5" r="4" />
+    <path d="M9.5 9.5L13.5 13.5" />
+    <path d="M6.5 4.5v4M4.5 6.5h4" />
+  </I>
+);
+
+export const MagnifierMinusIcon = (p: IconProps) => (
+  <I {...p}>
+    <circle cx="6.5" cy="6.5" r="4" />
+    <path d="M9.5 9.5L13.5 13.5" />
+    <path d="M4.5 6.5h4" />
+  </I>
+);
+
+/** Fit the selected bbox to the viewport. Outline + inner dashed bbox. */
+export const FitSelectionIcon = (p: IconProps) => (
+  <I {...p}>
+    <rect x="2" y="2" width="12" height="12" rx="1" />
+    <rect x="5" y="5" width="6" height="6" strokeDasharray="1.5 1.2" />
+  </I>
+);
+
+/** Fit drawing content (compact rectangle inside larger frame). */
+export const FitDrawingIcon = (p: IconProps) => (
+  <I {...p}>
+    <rect x="2" y="2" width="12" height="12" rx="1" />
+    <path d="M5 7h6M5 9h6M5 11h4" strokeWidth="1.1" />
+  </I>
+);
+
+/** Fit page (entire image frame fills viewport). */
+export const FitPageIcon = (p: IconProps) => (
+  <I {...p}>
+    <rect x="3" y="2" width="10" height="12" rx="0.5" />
+    <path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" strokeWidth="1.1" />
+  </I>
+);
+
+/** Fit width (page wider than tall, double arrows on horizontal axis). */
+export const FitWidthIcon = (p: IconProps) => (
+  <I {...p}>
+    <path d="M2 8h12M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2" />
+    <rect x="4" y="3" width="8" height="10" rx="0.5" strokeOpacity="0.5" />
+  </I>
+);
+
+export const HistoryBackIcon = (p: IconProps) => (
+  <I {...p}>
+    <path d="M13 8a5 5 0 1 0-5 5" />
+    <path d="M8 13L6 11M8 13l2-2" />
+  </I>
+);
+
+export const HistoryForwardIcon = (p: IconProps) => (
+  <I {...p}>
+    <path d="M3 8a5 5 0 1 1 5 5" />
+    <path d="M8 13l-2-2M8 13l2-2" />
+  </I>
+);
