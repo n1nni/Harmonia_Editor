@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useHarmonyStore } from '@/lib/store/useHarmonyStore';
+import { triggerImageUpload } from '@/hooks/data/useImageUpload';
 
 /**
  * Global keyboard shortcuts:
@@ -44,7 +45,9 @@ export function useKeyboardShortcuts() {
           return;
         }
         if (e.key === 'o' || e.key === 'O') {
-          void actions.loadFixture();
+          // Open the file picker rather than reloading the static
+          // fixture; the trigger is registered by `useImageUpload`.
+          triggerImageUpload();
           e.preventDefault();
           return;
         }

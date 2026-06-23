@@ -9,6 +9,7 @@ import {
   useViewport,
 } from '@/lib/store/selectors';
 import { ZoomToolbar } from './ZoomToolbar';
+import { triggerImageUpload } from '@/hooks/data/useImageUpload';
 import { ToolButton } from './primitives/ToolButton';
 import { SCALED } from './scale';
 import {
@@ -53,7 +54,7 @@ export function TopToolbar() {
     >
       {/* File — always visible regardless of active tool */}
       <Group>
-        <ToolButton label="Upload score" shortcut="Ctrl+O" onClick={() => void a.loadFixture()}>
+        <ToolButton label="Upload score" shortcut="Ctrl+O" onClick={triggerImageUpload}>
           <UploadIcon />
         </ToolButton>
         <SaveButton

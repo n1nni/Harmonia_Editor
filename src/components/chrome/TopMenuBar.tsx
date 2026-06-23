@@ -2,6 +2,7 @@
 
 import { useHarmonyActions, useHarmonyStore } from '@/lib/store/useHarmonyStore';
 import { useDisplay, useHistory, useInteraction } from '@/lib/store/selectors';
+import { triggerImageUpload } from '@/hooks/data/useImageUpload';
 import {
   Menu,
   MenuItem,
@@ -46,7 +47,7 @@ export function TopMenuBar() {
             <MenuItem
               label="Upload score"
               shortcut="Ctrl+O"
-              onSelect={() => void a.loadFixture()}
+              onSelect={triggerImageUpload}
             />
             <MenuItem
               label="Save edited MusicXML"

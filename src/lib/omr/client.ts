@@ -1,9 +1,14 @@
 import type { OmrResponse } from '@/types/omr';
+import { RemoteOmrClient } from './remoteClient';
 
 /**
  * Abstraction over how an OMR response is fetched.
- * Phase 1 ships `FixtureOmrClient`; a real backend can drop in later
- * by implementing the same interface — UI is untouched.
+ *
+ * The application talks to its data layer exclusively through this
+ * interface; the concrete implementation is swapped at the bottom of
+ * this file. `RemoteOmrClient` is the production default; the
+ * `FixtureOmrClient` below is retained for offline development and
+ * tests.
  */
 export interface OmrClient {
   upload(file?: File | Blob): Promise<OmrResponse>;
@@ -14,9 +19,7 @@ export class FixtureOmrClient implements OmrClient {
 
   async upload(): Promise<OmrResponse> {
     // `no-store` so edits to the fixture JSON during development show up
-    // on every refresh without manual cache busting. In production this
-    // would normally be cached, but Phase 1's fixture loader is itself a
-    // dev-only path — the real client will hit a server endpoint.
+    // on every refresh without manual cache busting.
     const res = await fetch(this.fixtureUrl, { cache: 'no-store' });
     if (!res.ok) {
       throw new Error(`Fixture fetch failed: ${res.status} ${res.statusText}`);
@@ -25,4 +28,7 @@ export class FixtureOmrClient implements OmrClient {
   }
 }
 
-export const omrClient: OmrClient = new FixtureOmrClient();
+// Production client. The Remote implementation routes through the
+// Next.js proxy at `/api/omr/process` to avoid mixed-content and CORS
+// problems against the hosted OMR service.
+export const omrClient: OmrClient = new RemoteOmrClient();

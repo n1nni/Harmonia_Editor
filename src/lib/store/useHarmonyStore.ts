@@ -235,6 +235,11 @@ export interface HarmonyState {
   };
   actions: {
     loadFixture(): Promise<void>;
+    /** POST the user's chosen image file to the OMR proxy and load the
+     *  resulting score into the store. Mirrors the same reset block as
+     *  `loadFixture` so previous edits / history / selection / viewport
+     *  history are dropped. */
+    uploadImage(file: File): Promise<void>;
     setImageDims(dims: ImageDims): void;
     setContainerSize(size: { w: number; h: number }): void;
     setZoom(z: number): void;
@@ -307,6 +312,69 @@ function computeFitScale(
   return Math.min(sx, sy) * 0.94;
 }
 
+/**
+ * Shared implementation behind `loadFixture` and `uploadImage`. Both
+ * actions perform the same lifecycle:
+ *
+ *   1. Set status to 'loading' and clear the previous fixture's
+ *      grayscale pixel cache (used by IoU auto-align).
+ *   2. Invoke a caller-supplied uploader.
+ *   3. On success, atomically reset every per-score slice (data, edits,
+ *      history, interaction, viewport.history).
+ *   4. On failure, surface the error message on `data.status = 'error'`.
+ *
+ * Extracted so future entry points (drag-and-drop, paste, batch) reuse
+ * the same state transitions without copy-pasting.
+ */
+type StoreSet = (
+  partial: HarmonyState | Partial<HarmonyState> | ((s: HarmonyState) => HarmonyState | Partial<HarmonyState>),
+) => void;
+
+async function runUpload(
+  set: StoreSet,
+  upload: () => Promise<OmrResponse>,
+): Promise<void> {
+  set((s) => ({ data: { ...s.data, status: 'loading' as const, error: null } }));
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { clearImagePixels } = require('@/lib/staff/imagePixels') as typeof import('@/lib/staff/imagePixels');
+    clearImagePixels();
+  } catch {
+    // Module unavailable (SSR / tests) — nothing to clear.
+  }
+  try {
+    const raw = await upload();
+    set(() => ({
+      data: { raw, imageDims: null, status: 'ready' as const, error: null },
+      edits: {
+        deletedNoteIds: new Set<string>(),
+        pitchShifts: new Map<string, number>(),
+        staffTransforms: new Map<StaffKey, StaffTransform>(),
+        addedNotes: new Map<string, AddedNote>(),
+        alignOffsets: new Map<string, AlignOffset>(),
+      },
+      history: { past: [], future: [] },
+      interaction: {
+        hoveredId: null,
+        selectedId: null,
+        pendingDeleteId: null,
+        deleteFocus: 'confirm' as const,
+        selectedStaffKey: null,
+        pendingAddedNote: null,
+      },
+    }));
+    // Reset viewport navigation history in a follow-up set call so we
+    // don't squash the live zoom/pan that the user may have touched
+    // while the upload was in flight.
+    set((s) => ({
+      viewport: { ...s.viewport, history: { past: [], future: [] } },
+    }));
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Unknown error';
+    set((s) => ({ data: { ...s.data, status: 'error' as const, error: msg } }));
+  }
+}
+
 export const useHarmonyStore = create<HarmonyState>((set, get) => ({
   data: { raw: null, imageDims: null, status: 'idle', error: null },
   viewport: {
@@ -350,53 +418,10 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
   fonts: { bravuraLoaded: false },
   actions: {
     async loadFixture() {
-      set((s) => ({ data: { ...s.data, status: 'loading', error: null } }));
-      // Drop the previous fixture's grayscale pixel buffer; a fresh one
-      // will be populated when the new image's onLoad fires. Lazy-required
-      // so the store has no top-level dependency on geometry-domain code.
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { clearImagePixels } = require('@/lib/staff/imagePixels') as typeof import('@/lib/staff/imagePixels');
-        clearImagePixels();
-      } catch {
-        // Module unavailable (SSR / tests) — nothing to clear.
-      }
-      try {
-        const raw = await omrClient.upload();
-        set(() => ({
-          data: { raw, imageDims: null, status: 'ready', error: null },
-          edits: {
-            deletedNoteIds: new Set<string>(),
-            pitchShifts: new Map<string, number>(),
-            staffTransforms: new Map<StaffKey, StaffTransform>(),
-            addedNotes: new Map<string, AddedNote>(),
-            alignOffsets: new Map<string, AlignOffset>(),
-          },
-          history: { past: [], future: [] },
-          interaction: {
-            hoveredId: null,
-            selectedId: null,
-            pendingDeleteId: null,
-            deleteFocus: 'confirm',
-            selectedStaffKey: null,
-            pendingAddedNote: null,
-          },
-        }));
-        // Reset the viewport navigation history on every fresh fixture
-        // load so stale snapshots from the previous score don't pollute
-        // Prev/Next. (This is done in a follow-up set call to avoid
-        // resetting the live zoom/pan which the user may have already
-        // adjusted before loadFixture resolved.)
-        set((s) => ({
-          viewport: {
-            ...s.viewport,
-            history: { past: [], future: [] },
-          },
-        }));
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Unknown error';
-        set((s) => ({ data: { ...s.data, status: 'error', error: msg } }));
-      }
+      await runUpload(set, () => omrClient.upload());
+    },
+    async uploadImage(file: File) {
+      await runUpload(set, () => omrClient.upload(file));
     },
     setImageDims(dims) {
       set((s) => {
