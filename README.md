@@ -14,7 +14,6 @@ The intended workflow proceeds in three stages. A score image is uploaded and su
 
 ## Table of Contents
 
-- [Figures](#figures)
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Architecture — How It Works](#architecture--how-it-works)
@@ -29,18 +28,6 @@ The intended workflow proceeds in three stages. A score image is uploaded and su
 - [Troubleshooting & FAQ](#troubleshooting--faq)
 - [Status](#status)
 - [License](#license)
-
----
-
-## Figures
-
-No figures are bundled with the repository. Screenshots of the editor, the staff inspector, and the classification panel may be added to a `docs/` directory and referenced below.
-
-<!--
-![Harmonia — main editor](docs/screenshot-editor.png)
-![Harmonia — staff inspector](docs/screenshot-staff-inspector.png)
-![Harmonia — classification panel](docs/screenshot-classification.png)
--->
 
 ---
 
