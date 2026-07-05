@@ -10,6 +10,10 @@ import path from 'node:path';
  * returns the absolute path that was written. Filename pattern:
  *   `score-<jobId>-<isoTimestamp>.musicxml`
  *
+ * The browser-side Downloads copy is triggered separately, client-side,
+ * by `saveEditedXml` in the store — this route only maintains the
+ * project's own versioned archive.
+ *
  * Safety:
  *   - file name is sanitized to alphanumerics, dashes, underscores, dots
  *   - target directory is always inside `process.cwd()/edited_score`

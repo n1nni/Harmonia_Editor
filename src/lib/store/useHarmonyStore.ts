@@ -859,7 +859,17 @@ export const useHarmonyStore = create<HarmonyState>((set, get) => ({
           const txt = await res.text();
           throw new Error(`Save failed (${res.status}): ${txt}`);
         }
-        const data = (await res.json()) as { path?: string };
+        const data = (await res.json()) as { path?: string; filename?: string };
+
+        // Trigger a real browser download of the same content, landing in
+        // the user's actual Downloads folder. This is independent of the
+        // server-side write above (which only maintains the project's
+        // `edited_score/` archive) and works regardless of where the
+        // Next.js server is hosted.
+        const { downloadTextFile } = await import('@/lib/utils/downloadFile');
+        const filename = data.filename ?? `score-${Date.now()}.musicxml`;
+        downloadTextFile(filename, edited);
+
         set(() => ({
           save: { status: 'saved', lastPath: data.path ?? null, error: null },
         }));
