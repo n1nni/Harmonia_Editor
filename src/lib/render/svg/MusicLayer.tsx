@@ -23,6 +23,10 @@ import { Beam } from './Beam';
 import { Slur } from './Slur';
 import { Stem, type StemDirection } from './Stem';
 
+// Color used to flag any notehead (and its stem) that carries a user edit —
+// a pitch shift, an alignment nudge, or a manually added note.
+const EDITED_NOTE_COLOR = '#1a9c4a';
+
 /**
  * Composes the full reconstructed score:
  *   - one <g> per staff carrying the staff's line_spacing context
@@ -109,14 +113,21 @@ const StaffGroup = memo(function StaffGroup({
   const noteheads: Detection[] = [];
   const otherGlyphs: Detection[] = [];
 
+  // ids of noteheads that carry a user edit (pitch shift, align offset, or
+  // are manually added) — these render in EDITED_NOTE_COLOR instead of the
+  // default color, so edited notes are visually distinguishable at a glance.
+  const editedIds = new Set<string>();
+
   for (const d of staff.detections) {
     if (deletedIds.has(d.id)) continue;
     if (d.class === 'beam') beams.push(d);
     else if (d.class === 'slur') slurs.push(d);
     else if (isNoteheadClass(d.class)) {
       const shift = pitchShifts.get(d.id) ?? 0;
+      const align = alignOffsets.get(d.id);
       let eff = shift === 0 ? d : applyPitchShiftToDetection(d, shift, ls);
-      eff = applyAlignOffsetToDetection(eff, alignOffsets.get(d.id));
+      eff = applyAlignOffsetToDetection(eff, align);
+      if (shift !== 0 || align) editedIds.add(d.id);
       noteheads.push(eff);
     } else otherGlyphs.push(d);
   }
@@ -124,12 +135,15 @@ const StaffGroup = memo(function StaffGroup({
   // Merge added notes (user-placed) as synthetic noteheads. They flow
   // through the same Glyph + Stem pipeline as detected notes — including
   // pitch-shift + deletion + alignment via the same id-keyed edit maps.
+  // Added notes are always considered "edited".
   for (const n of addedNotes) {
     if (deletedIds.has(n.id)) continue;
     const synth = addedNoteToDetection(n, staff);
     const shift = pitchShifts.get(synth.id) ?? 0;
+    const align = alignOffsets.get(synth.id);
     let eff = shift === 0 ? synth : applyPitchShiftToDetection(synth, shift, ls);
-    eff = applyAlignOffsetToDetection(eff, alignOffsets.get(synth.id));
+    eff = applyAlignOffsetToDetection(eff, align);
+    editedIds.add(synth.id);
     noteheads.push(eff);
   }
 
@@ -161,6 +175,7 @@ const StaffGroup = memo(function StaffGroup({
             cy={d.cy}
             direction={direction}
             lineSpacing={ls}
+            color={editedIds.has(d.id) ? EDITED_NOTE_COLOR : undefined}
           />
         );
       })}
@@ -176,6 +191,7 @@ const StaffGroup = memo(function StaffGroup({
             cy={d.cy}
             lineSpacing={ls}
             scale={renderScaleFor(d.class)}
+            fill={editedIds.has(d.id) ? EDITED_NOTE_COLOR : undefined}
           />
         );
       })}
